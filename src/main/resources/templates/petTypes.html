@@ -50,11 +50,11 @@
         <input type="hidden" id="editId" name="id">
         <div class="mb-3">
             <label for="editName" th:text="#{name}">Name</label>
-            <input type="text" class="form-control" id="editName" name="name" required>
+            <input type="text" class="form-control" id="editName" name="name" required data-pw="pet-type-name-input">
         </div>
         <div class="mb-3">
             <label for="editDescription" th:text="#{description}">Beschreibung</label>
-            <input type="text" class="form-control" id="editDescription" name="description">
+            <input type="text" class="form-control" id="editDescription" name="description" data-pw="pet-type-description-input">
         </div>
         <button type="submit" class="btn btn-success" th:text="#{save}">Speichern</button>
         <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()">Abbrechen</button>
