@@ -62,4 +62,10 @@ export class OwnerPage {
     const hasType = petTypes.some(type => type.toLowerCase() === petType.toLowerCase());
     expect(hasType).toBeTruthy();
   }
+
+  async hasPetType(petType: string): Promise<boolean> {
+    // Sucht nach einem Pet-Typen in der Owner-Detailansicht
+    const petTypes = await this.page.locator('table td').allTextContents();
+    return petTypes.some(type => type.trim().toLowerCase() === petType.toLowerCase());
+  }
 }

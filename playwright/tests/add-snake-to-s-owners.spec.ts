@@ -5,6 +5,7 @@ import { FindOwnersPage } from '../pages/FindOwnersPage';
 import { OwnerPage } from '../pages/OwnerPage';
 import { PetPage } from '../pages/PetPage';
 import ownerSnakeTestdata from '../fixtures/owner-snake-testdata.json';
+import { toAbsoluteUrl } from '../helpers/TestUtils';
 
 // Test: Lege einen neuen Owner mit Nachnamen, der mit S beginnt, an
 
@@ -41,10 +42,9 @@ test('add snake pet for all owners with last name starting with S', async ({ pag
   const sOwnerHrefs = await findOwnersPage.getOwnerDetailLinksByLastNameMatch('S');
 
   for (const href of sOwnerHrefs) {
-    await page.goto(href.startsWith('http') ? href : `${page.url().split('/owners')[0]}${href}`);
-    // Prüfe, ob bereits eine Schlange vorhanden ist
-    const petTypes = await page.locator('table td').allTextContents();
-    const hasSnake = petTypes.some(type => type.trim().toLowerCase() === 'snake');
+    await page.goto(toAbsoluteUrl(page.url(), href));
+    // Verwende die generische Methode aus OwnerPage
+    const hasSnake = await ownerPage.hasPetType('snake');
     if (!hasSnake) {
       await ownerPage.gotoAddPet();
       await petPage.addPet({ name: 'Snake', birthDate: '2020-01-01', type: 'snake' });
