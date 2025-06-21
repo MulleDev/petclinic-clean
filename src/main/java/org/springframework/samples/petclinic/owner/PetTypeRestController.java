@@ -30,4 +30,25 @@ public class PetTypeRestController {
 		return new ResponseEntity<>(saved, HttpStatus.CREATED);
 	}
 
+	@PutMapping("/{id}")
+	public ResponseEntity<PetType> updatePetType(@PathVariable Integer id, @RequestBody PetType petType) {
+		return petTypeRepository.findById(id)
+			.map(existing -> {
+				existing.setName(petType.getName());
+				existing.setDescription(petType.getDescription());
+				PetType saved = petTypeRepository.save(existing);
+				return ResponseEntity.ok(saved);
+			})
+			.orElse(ResponseEntity.notFound().build());
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deletePetType(@PathVariable Integer id) {
+		if (!petTypeRepository.existsById(id)) {
+			return ResponseEntity.notFound().build();
+		}
+		petTypeRepository.deleteById(id);
+		return ResponseEntity.noContent().build();
+	}
+
 }
