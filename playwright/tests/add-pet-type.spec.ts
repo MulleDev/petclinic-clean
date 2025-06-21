@@ -20,8 +20,8 @@ test.describe('Pet Typen verwalten – Anlegen', () => {
     await saveBtn.click();
     // Formular verschwindet
     await expect(page.locator('#addPetTypeForm')).toBeHidden();
-    // Neuer Eintrag in Tabelle
-    const row = page.locator('#petTypesTbody tr').last();
+    // Neuer Eintrag in Tabelle (über Name suchen, nicht .last())
+    const row = page.locator('#petTypesTbody tr').filter({ hasText: testName });
     const tds = row.locator('td');
     await expect(await tds.nth(0).textContent()).toBe(testName);
     await expect(await tds.nth(1).textContent()).toBe(testDesc);
@@ -41,6 +41,10 @@ test.describe('Pet Typen verwalten – Anlegen', () => {
     // Dialog-Handler vor dem Klick registrieren
     page.once('dialog', dialog => dialog.accept());
     await deleteBtn.click();
+    // Warte, bis der DELETE-Request erfolgreich war
+    await page.waitForResponse(response =>
+      response.url().includes('/api/pet-types') && response.request().method() === 'DELETE' && response.ok()
+    );
     // Prüfen, dass der Eintrag entfernt wurde
     await expect(rows.filter({ hasText: testName })).toHaveCount(0);
   });
