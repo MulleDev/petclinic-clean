@@ -7,15 +7,18 @@
       "city": "Musterstadt",
       "telephone": "0123456789"
     },
-    "pet": {
-      "name": "Bello",
-      "birthDate": "2015-01-01",
-      "type": "dog"
-    },
-    "visit": {
-      "date": "2025-07-01",
-      "description": "Routine Check"
-    }
+    "pets": [
+      {
+        "name": "Bello",
+        "birthDate": "2015-01-01",
+        "type": "dog"
+      },
+      {
+        "name": "Wuffi",
+        "birthDate": "2017-03-15",
+        "type": "dog"
+      }
+    ]
   },
   {
     "owner": {
@@ -23,16 +26,19 @@
       "lastName": "Musterfrau",
       "address": "Beispielweg 2",
       "city": "Beispielstadt",
-      "telephone": "987654321"
+      "telephone": "1234567890"
     },
-    "pet": {
-      "name": "Mieze",
-      "birthDate": "2018-05-10",
-      "type": "cat"
-    },
-    "visit": {
-      "date": "2025-08-15",
-      "description": "Impfung"
-    }
+    "pets": [
+      {
+        "name": "Mieze",
+        "birthDate": "2018-05-10",
+        "type": "cat"
+      },
+      {
+        "name": "Tiger",
+        "birthDate": "2020-11-20",
+        "type": "cat"
+      }
+    ]
   }
 ]
