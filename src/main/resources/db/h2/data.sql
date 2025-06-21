@@ -15,12 +15,12 @@ INSERT INTO vet_specialties VALUES (3, 3);
 INSERT INTO vet_specialties VALUES (4, 2);
 INSERT INTO vet_specialties VALUES (5, 1);
 
-INSERT INTO types VALUES (default, 'cat');
-INSERT INTO types VALUES (default, 'dog');
-INSERT INTO types VALUES (default, 'lizard');
-INSERT INTO types VALUES (default, 'snake');
-INSERT INTO types VALUES (default, 'bird');
-INSERT INTO types VALUES (default, 'hamster');
+INSERT INTO types VALUES (default, 'cat', 'Stubentiger, liebt Milch');
+INSERT INTO types VALUES (default, 'dog', 'Bester Freund des Menschen');
+INSERT INTO types VALUES (default, 'lizard', 'Schuppentier, braucht Wärme');
+INSERT INTO types VALUES (default, 'snake', 'Reptil, meist harmlos');
+INSERT INTO types VALUES (default, 'bird', 'Kann fliegen, zwitschert');
+INSERT INTO types VALUES (default, 'hamster', 'Kleines Nagetier, nachtaktiv');
 
 INSERT INTO owners VALUES (default, 'George', 'Franklin', '110 W. Liberty St.', 'Madison', '6085551023');
 INSERT INTO owners VALUES (default, 'Betty', 'Davis', '638 Cardinal Ave.', 'Sun Prairie', '6085551749');
