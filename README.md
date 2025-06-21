@@ -1,8 +1,29 @@
 # Testing the Spring PetClinic Sample Application with playwright by using only promting [![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)[![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml)
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/spring-projects/spring-petclinic) [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=7517918)
+## Project Status & Setup Overview
 
-## Understanding the Spring Petclinic application with a few diagrams
+1. **Project & Goal:**
+   - You are working on the Spring PetClinic project (Java, Maven, Spring Boot) and have set up Playwright for end-to-end testing.
+   - The goal was to deploy the application to Heroku and run automated tests against the live instance.
+
+2. **Checkstyle:**
+   - Checkstyle was disabled in the pom.xml so that the build on Heroku is no longer blocked by style errors.
+
+3. **Heroku Deployment:**
+   - The application is successfully deployed to Heroku.
+   - The current live URL is: https://petclinic-playwright-copilot-213a6b602332.herokuapp.com/
+   - Deployment is done via `git push heroku main` (you need to push to Heroku separately unless you use GitHub integration).
+
+4. **Playwright Tests:**
+   - The Playwright configuration was updated so that the baseURL points to the Heroku instance.
+   - In HomePage.ts, the `goto()` method was changed to use the baseURL (i.e., '/'), so tests run against the live instance.
+   - Tests are executed in the `playwright` subfolder (where `@playwright/test` is installed).
+   - In the last test run, there was an error when adding a pet (`addPet`), but in general, the tests now run against Heroku.
+
+5. **CI/CD:**
+   - You are currently using Heroku Git deployment. A Jenkins pipeline is not strictly necessary, but would be useful for more complex workflows or multiple environments.
+
+#
 
 [See the presentation here](https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application)
 
