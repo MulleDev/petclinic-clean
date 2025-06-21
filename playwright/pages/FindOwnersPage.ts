@@ -4,7 +4,7 @@ export class FindOwnersPage {
   constructor(private page: Page) {}
 
   private get lastNameInput() {
-    return this.page.getByLabel('Last Name');
+    return this.page.locator('[data-pw="find-owner-lastname"]');
   }
   private get findOwnerButton() {
     return this.page.getByRole('button', { name: 'Find Owner' });
