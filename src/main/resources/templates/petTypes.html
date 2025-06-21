@@ -144,11 +144,17 @@
     async function deletePetType(id) {
         if (!confirm('Wirklich löschen?')) return;
         const res = await fetch(`/api/pet-types/${id}`, { method: 'DELETE' });
+        console.log('DELETE response:', res.status, res.ok);
+        const row = document.querySelector(`[data-pw-row='${id}']`);
+        console.log('Zu löschende Zeile:', row);
         if (res.ok || res.status === 204) {
-            const row = document.querySelector(`[data-pw-row='${id}']`);
-            if (row) row.remove();
+            if (row) {
+                row.remove();
+            } else {
+                alert('Zeile zum Löschen nicht gefunden!');
+            }
         } else {
-            alert('Fehler beim Löschen!');
+            alert('Fehler beim Löschen! Status: ' + res.status);
         }
     }
     </script>
