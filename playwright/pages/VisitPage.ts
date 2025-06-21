@@ -3,6 +3,7 @@ import { Page, expect } from '@playwright/test';
 export class VisitPage {
   constructor(private page: Page) {}
 
+  // TODO: Update these selectors if data-pw attributes are added in the visit form fields
   private get dateInput() {
     return this.page.getByTestId('date');
   }

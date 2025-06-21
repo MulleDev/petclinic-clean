@@ -27,7 +27,7 @@
     </tr>
   </table>
 
-  <form th:object="${visit}" class="form-horizontal" method="post">
+  <form th:object="${visit}" class="form-horizontal" method="post" data-pw="visit-form">
     <div class="form-group has-feedback">
       <input th:replace="~{fragments/inputField :: input ('Date', 'date', 'date')}" />
       <input th:replace="~{fragments/inputField :: input ('Description', 'description', 'text')}" />
@@ -36,7 +36,7 @@
     <div class="form-group">
       <div class="col-sm-offset-2 col-sm-10">
         <input type="hidden" name="petId" th:value="${pet.id}" />
-        <button class="btn btn-primary" type="submit" th:text="#{addVisit}">Add Visit</button>
+        <button class="btn btn-primary" type="submit" th:text="#{addVisit}" data-pw="visit-submit">Add Visit</button>
       </div>
     </div>
   </form>

@@ -7,28 +7,31 @@ export class OwnerPage {
     return this.page.getByRole('link', { name: 'FIND OWNERS' });
   }
   private get addOwnerLink() {
-    return this.page.getByRole('link', { name: 'Add Owner' });
+    return this.page.locator('[data-pw="owner-add-link"]');
   }
   private get firstNameInput() {
-    return this.page.getByTestId('firstName');
+    return this.page.locator('[data-pw="firstName"]');
   }
   private get lastNameInput() {
-    return this.page.getByTestId('lastName');
+    return this.page.locator('[data-pw="lastName"]');
   }
   private get addressInput() {
-    return this.page.getByTestId('address');
+    return this.page.locator('[data-pw="address"]');
   }
   private get cityInput() {
-    return this.page.getByTestId('city');
+    return this.page.locator('[data-pw="city"]');
   }
   private get telephoneInput() {
-    return this.page.getByTestId('telephone');
+    return this.page.locator('[data-pw="telephone"]');
   }
   private get addOwnerButton() {
-    return this.page.getByRole('button', { name: 'Add Owner' });
+    return this.page.locator('[data-pw="owner-submit"]');
   }
   private get addPetLink() {
-    return this.page.getByRole('link', { name: 'Add New Pet' });
+    return this.page.locator('[data-pw="pet-add-link"]');
+  }
+  private get editOwnerLink() {
+    return this.page.locator('[data-pw="owner-edit-link"]');
   }
 
   async gotoFindOwners() {
@@ -49,13 +52,12 @@ export class OwnerPage {
   }
 
   async gotoAddPet() {
-    // Warte auf ein Element, das garantiert auf der Owner-Detailseite existiert (z.B. Adresse)
-    //await this.page.getByText('Owner Information', { exact: false }).waitFor({ timeout: 5000 });
     await this.addPetLink.click();
   }
 
   async checkHasPetType(ownerHref: string, petType: string) {
     await this.page.goto(ownerHref.startsWith('http') ? ownerHref : `${this.page.url().split('/owners')[0]}${ownerHref}`);
+    // TODO: Update selector for pet type if data-pw is added in the future
     const petTypes = await this.page.locator('table.pet-list td').allTextContents();
     const hasType = petTypes.some(type => type.toLowerCase() === petType.toLowerCase());
     expect(hasType).toBeTruthy();
