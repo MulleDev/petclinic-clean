@@ -22,23 +22,10 @@ test('all owners with last name starting with S have a snake as pet', async ({ p
   await findOwnersPage.searchOwner('');
 
   // Sammle alle Links zu Owner-Detailseiten mit Nachnamen, die mit S beginnen (über alle Seiten)
-  let hasNextPage = true;
-  const sOwnerHrefs: string[] = [];
-  while (hasNextPage) {
-    const ownerRows = await page.locator('table tbody tr').all();
-    for (let i = 0; i < ownerRows.length; i++) {
-      const row = ownerRows[i];
-      const lastName = await row.locator('td').nth(0).innerText();
-      if (lastName.startsWith('S')) {
-        const href = await row.locator('a').first().getAttribute('href');
-        if (href) sOwnerHrefs.push(href);
-      }
-    }
-    console.log('hasNextPage:', hasNextPage);
-    hasNextPage = await findOwnersPage.gotoNextPage();
-  }
+  const sOwnerHrefs = await findOwnersPage.getOwnerDetailLinksByLastNameMatch('S');
 
   // Jetzt alle gesammelten Owner-Detailseiten prüfen
+  console.log('Gesammelte Owner-Detail-Links (sOwnerHrefs):', sOwnerHrefs);
   for (const href of sOwnerHrefs) {
     await ownerPage.checkHasPetType(href, 'snake');
   }
