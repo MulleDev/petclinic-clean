@@ -78,7 +78,26 @@
             const newType = await res.json();
             const tbody = document.getElementById('petTypesTbody');
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${newType.name}</td><td>${newType.description || ''}</td>`;
+            tr.setAttribute('data-pw-row', newType.id);
+            tr.innerHTML = `
+                <td>${newType.name}</td>
+                <td>${newType.description || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary"
+                        data-pw="edit-pet-type-${newType.id}"
+                        data-id="${newType.id}"
+                        data-name="${newType.name}"
+                        data-description="${newType.description || ''}"
+                        onclick="showEditPetTypeForm(this)">
+                        ${typeof I18N_EDIT !== 'undefined' ? I18N_EDIT : 'Bearbeiten'}
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                        data-pw="delete-pet-type-${newType.id}"
+                        onclick="deletePetType(${newType.id})">
+                        ${typeof I18N_DELETE !== 'undefined' ? I18N_DELETE : 'Löschen'}
+                    </button>
+                </td>
+            `;
             tbody.appendChild(tr);
             document.getElementById('addPetTypeForm').reset();
             document.getElementById('addPetTypeForm').style.display = 'none';
