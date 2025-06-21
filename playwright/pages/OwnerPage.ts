@@ -4,7 +4,7 @@ export class OwnerPage {
   constructor(private page: Page) {}
 
   private get findOwnersLink() {
-    return this.page.getByRole('link', { name: 'FIND OWNERS' });
+    return this.page.locator('[data-pw="nav-find-owners"] a');
   }
   private get addOwnerLink() {
     return this.page.locator('[data-pw="owner-add-link"]');
