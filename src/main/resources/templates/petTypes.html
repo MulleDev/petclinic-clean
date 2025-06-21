@@ -1,29 +1,25 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title th:text="#{petTypesManagement}">Pet Typen verwalten</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="fragments/layout :: layout (~{::body}, 'pet-types')">
 <body>
 <div class="container">
-    <h2 th:text="#{petTypesManagement}">Pet Typen verwalten</h2>
-    <button class="btn btn-primary mb-3" data-pw="add-pet-type" id="showAddPetTypeBtn" th:text="#{addPetType}">Neuen Pet Typ anlegen</button>
+    <h2 th:text="#{{petTypesManagement}}">Pet Typen verwalten</h2>
+    <button class="btn btn-primary mb-3" data-pw="add-pet-type" id="showAddPetTypeBtn" th:text="#{{addPetType}}">Neuen Pet Typ anlegen</button>
     <form id="addPetTypeForm" style="display:none" onsubmit="return addPetType(event)">
         <div class="mb-3">
-            <label for="name" th:text="#{name}">Name</label>
+            <label for="name" th:text="#{{name}}">Name</label>
             <input type="text" class="form-control" id="name" name="name" required>
         </div>
         <div class="mb-3">
-            <label for="description" th:text="#{description}">Beschreibung</label>
+            <label for="description" th:text="#{{description}}">Beschreibung</label>
             <input type="text" class="form-control" id="description" name="description">
         </div>
-        <button type="submit" class="btn btn-success" data-pw="save-pet-type" th:text="#{save}">Speichern</button>
+        <button type="submit" class="btn btn-success" data-pw="save-pet-type" th:text="#{{save}}">Speichern</button>
     </form>
     <table class="table table-striped" id="petTypesTable">
         <thead>
         <tr>
-            <th th:text="#{name}">Name</th>
-            <th th:text="#{description}">Beschreibung</th>
+            <th th:text="#{{name}}">Name</th>
+            <th th:text="#{{description}}">Beschreibung</th>
         </tr>
         </thead>
         <tbody id="petTypesTbody">
@@ -49,15 +45,15 @@
     <form id="editPetTypeForm" style="display:none" onsubmit="return editPetType(event)">
         <input type="hidden" id="editId" name="id">
         <div class="mb-3">
-            <label for="editName" th:text="#{name}">Name</label>
+            <label for="editName" th:text="#{{name}}">Name</label>
             <input type="text" class="form-control" id="editName" name="name" required data-pw="pet-type-name-input">
         </div>
         <div class="mb-3">
-            <label for="editDescription" th:text="#{description}">Beschreibung</label>
+            <label for="editDescription" th:text="#{{description}}">Beschreibung</label>
             <input type="text" class="form-control" id="editDescription" name="description" data-pw="pet-type-description-input">
         </div>
-        <button type="submit" class="btn btn-success" th:text="#{save}" data-pw="save-edit-pet-type">Speichern</button>
-        <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()" th:text="#{cancel}">Abbrechen</button>
+        <button type="submit" class="btn btn-success" th:text="#{{save}}" data-pw="save-edit-pet-type">Speichern</button>
+        <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()" th:text="#{{cancel}}">Abbrechen</button>
     </form>
     <script>
     document.getElementById('showAddPetTypeBtn').addEventListener('click', function() {
