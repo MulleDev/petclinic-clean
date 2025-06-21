@@ -32,14 +32,12 @@ public class PetTypeRestController {
 
 	@PutMapping("/{id}")
 	public ResponseEntity<PetType> updatePetType(@PathVariable Integer id, @RequestBody PetType petType) {
-		return petTypeRepository.findById(id)
-			.map(existing -> {
-				existing.setName(petType.getName());
-				existing.setDescription(petType.getDescription());
-				PetType saved = petTypeRepository.save(existing);
-				return ResponseEntity.ok(saved);
-			})
-			.orElse(ResponseEntity.notFound().build());
+		return petTypeRepository.findById(id).map(existing -> {
+			existing.setName(petType.getName());
+			existing.setDescription(petType.getDescription());
+			PetType saved = petTypeRepository.save(existing);
+			return ResponseEntity.ok(saved);
+		}).orElse(ResponseEntity.notFound().build());
 	}
 
 	@DeleteMapping("/{id}")
