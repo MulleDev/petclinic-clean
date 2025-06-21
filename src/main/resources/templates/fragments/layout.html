@@ -38,23 +38,22 @@
 
         <ul class="nav navbar-nav me-auto">
 
-          <li th:replace="~{::menuItem ('/','home','home page','home',#{home})}">
+          <li th:replace="~{::menuItem ('/','home','home page','home',#{home})}" data-pw="nav-home">
             <span class="fa fa-home" aria-hidden="true"></span>
             <span th:text="#{home}">Home</span>
           </li>
 
-          <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search',#{findOwners})}">
+          <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search',#{findOwners})}" data-pw="nav-find-owners">
             <span class="fa fa-search" aria-hidden="true"></span>
             <span th:text="#{findOwners}">Find owners</span>
           </li>
 
-          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list',#{vets})}">
+          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list',#{vets})}" data-pw="nav-vets">
             <span class="fa fa-th-list" aria-hidden="true"></span>
             <span th:text="#{vets}">Veterinarians</span>
           </li>
 
-          <li
-            th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle',#{error})}">
+          <li th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle',#{error})}" data-pw="nav-error">
             <span class="fa exclamation-triangle" aria-hidden="true"></span>
             <span th:text="#{error}">Error</span>
           </li>
