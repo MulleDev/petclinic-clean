@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { HomePage } from '../pages/HomePage';
 import { Navigation } from '../pages/Navigation';
 import { FindOwnersPage } from '../pages/FindOwnersPage';
+import { OwnerPage } from '../pages/OwnerPage';
 
 // Test: Alle Owner mit Nachnamen, die mit S beginnen, haben eine Schlange als Pet
 
@@ -9,34 +10,36 @@ test('all owners with last name starting with S have a snake as pet', async ({ p
   const homePage = new HomePage(page);
   const navigation = new Navigation(page);
   const findOwnersPage = new FindOwnersPage(page);
+  const ownerPage = new OwnerPage(page);
 
   // Gehe zur Startseite und dann zu "Find Owners"
   await homePage.goto();
   await navigation.gotoFindOwners();
   await findOwnersPage.expectOnPage();
 
-  // Suche alle Owner mit Nachnamen, die mit S beginnen
-  await findOwnersPage.searchOwner('S');
+  // Suche alle Owner ohne Nachnamen, um alle anzuzeigen
+  // Dies setzt die Pagination zurück, falls sie vorher gesetzt war
+  await findOwnersPage.searchOwner('');
 
-  // Hole alle Zeilen der Owner-Tabelle
-  const ownerRows = await page.locator('table tbody tr').all();
-
-  for (let i = 0; i < ownerRows.length; i++) {
-    const row = ownerRows[i];
-    const lastName = await row.locator('td').nth(0).innerText();
-    if (lastName.startsWith('S')) {
-      // Klicke auf den Owner-Link, um die Detailseite zu öffnen
-      await row.locator('a').first().click();
-
-      // Prüfe, ob mindestens ein Pet vom Typ "snake" existiert
-      const petTypes = await page.locator('table.pet-list td').allTextContents();
-      const hasSnake = petTypes.some(type => type.toLowerCase() === 'snake');
-      expect(hasSnake).toBeTruthy();
-
-      // Gehe zurück zur Owner-Liste
-      await navigation.gotoFindOwners();
-      await findOwnersPage.expectOnPage();
-      await findOwnersPage.searchOwner('S');
+  // Sammle alle Links zu Owner-Detailseiten mit Nachnamen, die mit S beginnen (über alle Seiten)
+  let hasNextPage = true;
+  const sOwnerHrefs: string[] = [];
+  while (hasNextPage) {
+    const ownerRows = await page.locator('table tbody tr').all();
+    for (let i = 0; i < ownerRows.length; i++) {
+      const row = ownerRows[i];
+      const lastName = await row.locator('td').nth(0).innerText();
+      if (lastName.startsWith('S')) {
+        const href = await row.locator('a').first().getAttribute('href');
+        if (href) sOwnerHrefs.push(href);
+      }
     }
+    console.log('hasNextPage:', hasNextPage);
+    hasNextPage = await findOwnersPage.gotoNextPage();
+  }
+
+  // Jetzt alle gesammelten Owner-Detailseiten prüfen
+  for (const href of sOwnerHrefs) {
+    await ownerPage.checkHasPetType(href, 'snake');
   }
 });

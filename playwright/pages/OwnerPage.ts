@@ -53,4 +53,11 @@ export class OwnerPage {
     //await this.page.getByText('Owner Information', { exact: false }).waitFor({ timeout: 5000 });
     await this.addPetLink.click();
   }
+
+  async checkHasPetType(ownerHref: string, petType: string) {
+    await this.page.goto(ownerHref.startsWith('http') ? ownerHref : `${this.page.url().split('/owners')[0]}${ownerHref}`);
+    const petTypes = await this.page.locator('table.pet-list td').allTextContents();
+    const hasType = petTypes.some(type => type.toLowerCase() === petType.toLowerCase());
+    expect(hasType).toBeTruthy();
+  }
 }

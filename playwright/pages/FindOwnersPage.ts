@@ -25,4 +25,14 @@ export class FindOwnersPage {
   async expectOnPage() {
     await expect(this.page.getByRole('heading', { name: 'Find Owners' })).toBeVisible();
   }
+
+  async gotoNextPage() {
+    const nextButton = this.page.locator('a[title="next"]');
+    if (await nextButton.count() > 0 && await nextButton.isEnabled()) {
+      await nextButton.click();
+      await this.page.waitForLoadState('networkidle');
+      return true;
+    }
+    return false;
+  }
 }
