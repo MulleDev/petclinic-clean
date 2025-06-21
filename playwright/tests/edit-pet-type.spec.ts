@@ -10,11 +10,12 @@ test.describe('Pet Types Management: Edit', () => {
     const firstEditBtn = page.locator('[data-pw^="edit-pet-type-"]').first();
     await expect(firstEditBtn).toBeVisible();
     await firstEditBtn.click();
-
-    // Edit form should appear (assume modal or inline form)
+    // Warte explizit auf das sichtbare Edit-Formular und die Inputs/Buttons
+    const editForm = page.locator('#editPetTypeForm');
+    await expect(editForm).toBeVisible();
     const nameInput = page.locator('#editName');
     const descInput = page.locator('#editDescription');
-    const saveBtn = page.locator('[data-pw="save-pet-type"]');
+    const saveBtn = page.locator('[data-pw="save-edit-pet-type"]');
     await expect(nameInput).toBeVisible();
     await expect(descInput).toBeVisible();
     await expect(saveBtn).toBeVisible();
