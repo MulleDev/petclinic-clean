@@ -42,7 +42,12 @@ test('add snake pet for all owners with last name starting with S', async ({ pag
 
   for (const href of sOwnerHrefs) {
     await page.goto(href.startsWith('http') ? href : `${page.url().split('/owners')[0]}${href}`);
-    await ownerPage.gotoAddPet();
-    await petPage.addPet({ name: 'Snake', birthDate: '2020-01-01', type: 'snake' });
+    // Prüfe, ob bereits eine Schlange vorhanden ist
+    const petTypes = await page.locator('table td').allTextContents();
+    const hasSnake = petTypes.some(type => type.trim().toLowerCase() === 'snake');
+    if (!hasSnake) {
+      await ownerPage.gotoAddPet();
+      await petPage.addPet({ name: 'Snake', birthDate: '2020-01-01', type: 'snake' });
+    }
   }
 });
