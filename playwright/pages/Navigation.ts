@@ -3,17 +3,20 @@ import { Page } from '@playwright/test';
 export class Navigation {
   constructor(private page: Page) {}
 
-  private get homeLink() {
-    return this.page.getByRole('link', { name: 'HOME' });
+  get homeLink() {
+    return this.page.locator('[data-pw="nav-home"] a');
   }
-  private get findOwnersLink() {
-    return this.page.getByRole('link', { name: 'FIND OWNERS' });
+  get findOwnersLink() {
+    return this.page.locator('[data-pw="nav-find-owners"] a');
   }
-  private get veterinariansLink() {
-    return this.page.getByRole('link', { name: 'VETERINARIANS' });
+  get veterinariansLink() {
+    return this.page.locator('[data-pw="nav-vets"] a');
   }
-  private get errorLink() {
-    return this.page.getByRole('link', { name: 'ERROR' });
+  get errorLink() {
+    return this.page.locator('[data-pw="nav-error"] a');
+  }
+  get petTypesLink() {
+    return this.page.locator('[data-pw="nav-pet-types"] a');
   }
 
   async gotoHome() {
@@ -27,5 +30,8 @@ export class Navigation {
   }
   async gotoError() {
     await this.errorLink.click();
+  }
+  async gotoPetTypes() {
+    await this.petTypesLink.click();
   }
 }

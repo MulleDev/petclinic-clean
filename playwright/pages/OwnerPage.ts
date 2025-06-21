@@ -57,15 +57,18 @@ export class OwnerPage {
 
   async checkHasPetType(ownerHref: string, petType: string) {
     await this.page.goto(ownerHref.startsWith('http') ? ownerHref : `${this.page.url().split('/owners')[0]}${ownerHref}`);
-    // TODO: Update selector for pet type if data-pw is added in the future
-    const petTypes = await this.page.locator('table.pet-list td').allTextContents();
-    const hasType = petTypes.some(type => type.toLowerCase() === petType.toLowerCase());
+    // Selektiere alle <dt> mit Text 'Type' und hole das zugehörige <dd>
+    const typeDDs = await this.page.locator('dt', { hasText: 'Type' }).evaluateAll((dts) =>
+      dts.map(dt => dt.nextElementSibling?.textContent?.trim() || '')
+    );
+    const hasType = typeDDs.some(type => type.toLowerCase() === petType.toLowerCase());
     expect(hasType).toBeTruthy();
   }
 
   async hasPetType(petType: string): Promise<boolean> {
-    // Sucht nach einem Pet-Typen in der Owner-Detailansicht
-    const petTypes = await this.page.locator('table td').allTextContents();
-    return petTypes.some(type => type.trim().toLowerCase() === petType.toLowerCase());
+    const typeDDs = await this.page.locator('dt', { hasText: 'Type' }).evaluateAll((dts) =>
+      dts.map(dt => dt.nextElementSibling?.textContent?.trim() || '')
+    );
+    return typeDDs.some(type => type.toLowerCase() === petType.toLowerCase());
   }
 }
