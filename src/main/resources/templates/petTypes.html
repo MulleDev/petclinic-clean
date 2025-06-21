@@ -57,7 +57,7 @@
             <input type="text" class="form-control" id="editDescription" name="description" data-pw="pet-type-description-input">
         </div>
         <button type="submit" class="btn btn-success" th:text="#{save}" data-pw="save-edit-pet-type">Speichern</button>
-        <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()">Abbrechen</button>
+        <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()" th:text="#{cancel}">Abbrechen</button>
     </form>
     <script>
     document.getElementById('showAddPetTypeBtn').addEventListener('click', function() {
