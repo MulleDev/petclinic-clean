@@ -7,7 +7,7 @@
 <body>
 <div class="container">
     <h2 th:text="#{petTypesManagement}">Pet Typen verwalten</h2>
-    <button class="btn btn-primary mb-3" data-pw="add-pet-type" onclick="document.getElementById('addPetTypeForm').style.display='block'" th:text="#{addPetType}">Neuen Pet Typ anlegen</button>
+    <button class="btn btn-primary mb-3" data-pw="add-pet-type" id="showAddPetTypeBtn" th:text="#{addPetType}">Neuen Pet Typ anlegen</button>
     <form id="addPetTypeForm" style="display:none" onsubmit="return addPetType(event)">
         <div class="mb-3">
             <label for="name" th:text="#{name}">Name</label>
@@ -34,6 +34,10 @@
         </tbody>
     </table>
     <script>
+    document.getElementById('showAddPetTypeBtn').addEventListener('click', function() {
+        document.getElementById('addPetTypeForm').style.display = 'block';
+        document.getElementById('name').focus();
+    });
     async function addPetType(event) {
         event.preventDefault();
         const name = document.getElementById('name').value.trim();
