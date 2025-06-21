@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{petTypesManagement}">Pet Typen verwalten</title>
+</head>
+<body>
+<div class="container">
+    <h2 th:text="#{petTypesManagement}">Pet Typen verwalten</h2>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th th:text="#{name}">Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="petType : ${petTypes}">
+            <td th:text="${petType.name}">Typname</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

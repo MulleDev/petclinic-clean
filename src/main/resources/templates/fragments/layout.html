@@ -58,6 +58,11 @@
             <span th:text="#{error}">Error</span>
           </li>
 
+          <li th:replace="~{::menuItem ('/pet-types','pet-types','pet types management','paw',#{petTypesManagement},'nav-pet-types')}">
+            <span class="fa fa-paw" aria-hidden="true"></span>
+            <span th:text="#{petTypesManagement}">Pet Typen verwalten</span>
+          </li>
+
         </ul>
       </div>
     </div>
