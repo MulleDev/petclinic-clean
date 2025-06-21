@@ -33,7 +33,8 @@
             <td>
                 <button class="btn btn-sm btn-secondary"
                         th:attr="data-pw='edit-pet-type-' + ${petType.id}"
-                        th:onclick="'showEditPetTypeForm(' + ${petType.id} + ', \' ' + ${petType.name} + ' \' , \' ' + (${petType.description} != null ? ${petType.description} : '') + ' \')'">
+                        th:attrappend="data-id=${petType.id},data-name=${petType.name},data-description=${petType.description}"
+                        onclick="showEditPetTypeForm(this)">
                     Bearbeiten
                 </button>
                 <button class="btn btn-sm btn-danger"
@@ -86,7 +87,10 @@
         }
         return false;
     }
-    function showEditPetTypeForm(id, name, description) {
+    function showEditPetTypeForm(btn) {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const description = btn.getAttribute('data-description') || '';
         document.getElementById('editId').value = id;
         document.getElementById('editName').value = name;
         document.getElementById('editDescription').value = description;
