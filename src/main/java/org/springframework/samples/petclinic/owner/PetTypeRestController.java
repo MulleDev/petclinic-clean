@@ -10,23 +10,24 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/pet-types")
 public class PetTypeRestController {
 
-    private final PetTypeRepository petTypeRepository;
+	private final PetTypeRepository petTypeRepository;
 
-    public PetTypeRestController(PetTypeRepository petTypeRepository) {
-        this.petTypeRepository = petTypeRepository;
-    }
+	public PetTypeRestController(PetTypeRepository petTypeRepository) {
+		this.petTypeRepository = petTypeRepository;
+	}
 
-    @GetMapping
-    public List<PetType> getAllPetTypes() {
-        return petTypeRepository.findPetTypes();
-    }
+	@GetMapping
+	public List<PetType> getAllPetTypes() {
+		return petTypeRepository.findPetTypes();
+	}
 
-    @PostMapping
-    public ResponseEntity<PetType> createPetType(@RequestBody PetType petType) {
-        if (petType.getName() == null || petType.getName().isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-        PetType saved = petTypeRepository.save(petType);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
+	@PostMapping
+	public ResponseEntity<PetType> createPetType(@RequestBody PetType petType) {
+		if (petType.getName() == null || petType.getName().isBlank()) {
+			return ResponseEntity.badRequest().build();
+		}
+		PetType saved = petTypeRepository.save(petType);
+		return new ResponseEntity<>(saved, HttpStatus.CREATED);
+	}
+
 }
