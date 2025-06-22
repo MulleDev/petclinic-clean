@@ -27,6 +27,20 @@ public class JiraIssueController {
 		return ResponseEntity.ok(result);
 	}
 
+	@Operation(summary = "Jira-Issue abfragen",
+			description = "Liefert die wichtigsten Infos zu einem Jira-Ticket (Summary, Description, Status, Komponenten, Labels, Kommentare)")
+	@GetMapping("/{issueKey}")
+	public ResponseEntity<?> getIssue(@PathVariable String issueKey) {
+		return jiraIssueService.getIssue(issueKey);
+	}
+
+	@Operation(summary = "Kommentar zu Jira-Issue hinzufügen",
+			description = "Fügt einem bestehenden Jira-Ticket einen Kommentar hinzu.")
+	@PostMapping("/{issueKey}/comments")
+	public ResponseEntity<?> addComment(@PathVariable String issueKey, @Valid @RequestBody JiraCommentRequest request) {
+		return jiraIssueService.addComment(issueKey, request);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {

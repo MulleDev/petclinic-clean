@@ -61,22 +61,25 @@ public class JiraIssueService {
 		// Dynamisches Mapping für Custom Fields
 		if (request.getEpicLink() != null) {
 			String jiraField = JiraFieldMappingConfig.getJiraField("epicLink");
-			if (jiraField != null) {
+			// Nur setzen, wenn das Feld im Request gesetzt ist UND im
+			// Jira-Projekt/Screensetup existiert
+			if (jiraField != null && request.getEpicLink() != null && !request.getEpicLink().isBlank()) {
 				fields.put(jiraField, request.getEpicLink());
 			}
 			else {
-				logger.warn("Kein Mapping für KI-Feld 'epicLink'. Ticket wird nicht angelegt.");
-				throw new IllegalArgumentException("Feld 'epicLink' kann nicht gemappt werden.");
+				logger.info("Feld 'epicLink' wird nicht gesetzt, da kein Mapping oder Wert vorhanden.");
 			}
 		}
 		if (request.getAcceptanceCriteria() != null) {
 			String jiraField = JiraFieldMappingConfig.getJiraField("acceptanceCriteria");
-			if (jiraField != null) {
+			// Nur setzen, wenn das Feld im Request gesetzt ist UND im
+			// Jira-Projekt/Screensetup existiert
+			if (jiraField != null && request.getAcceptanceCriteria() != null
+					&& !request.getAcceptanceCriteria().isBlank()) {
 				fields.put(jiraField, request.getAcceptanceCriteria());
 			}
 			else {
-				logger.warn("Kein Mapping für KI-Feld 'acceptanceCriteria'. Ticket wird nicht angelegt.");
-				throw new IllegalArgumentException("Feld 'acceptanceCriteria' kann nicht gemappt werden.");
+				logger.info("Feld 'acceptanceCriteria' wird nicht gesetzt, da kein Mapping oder Wert vorhanden.");
 			}
 		}
 
@@ -132,6 +135,58 @@ public class JiraIssueService {
 	public String createIssueFallback(JiraIssueRequest request, Throwable t) {
 		logger.error("Jira Issue creation failed after retries: {}", t.getMessage());
 		throw new RuntimeException("Jira Issue creation failed after retries", t);
+	}
+
+	public ResponseEntity<?> getIssue(String issueKey) {
+		String url = jiraUrl + "/rest/api/2/issue/" + issueKey + "?expand=renderedFields,fields,comment";
+		String auth = jiraUser + ":" + jiraPassword;
+		String basicAuth = "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
+		try {
+			String response = webClient.get()
+				.uri(url)
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.header(HttpHeaders.AUTHORIZATION, basicAuth)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+			return ResponseEntity.ok(response);
+		}
+		catch (WebClientResponseException ex) {
+			if (ex.getStatusCode().value() == 404) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Issue nicht gefunden: " + issueKey);
+			}
+			return ResponseEntity.status(ex.getStatusCode()).body(ex.getResponseBodyAsString());
+		}
+		catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Fehler: " + ex.getMessage());
+		}
+	}
+
+	public ResponseEntity<?> addComment(String issueKey, JiraCommentRequest request) {
+		String url = jiraUrl + "/rest/api/2/issue/" + issueKey + "/comment";
+		String auth = jiraUser + ":" + jiraPassword;
+		String basicAuth = "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
+		Map<String, Object> body = Map.of("body", request.getComment());
+		try {
+			String response = webClient.post()
+				.uri(url)
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.header(HttpHeaders.AUTHORIZATION, basicAuth)
+				.bodyValue(body)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+			return ResponseEntity.ok(response);
+		}
+		catch (WebClientResponseException ex) {
+			if (ex.getStatusCode().value() == 404) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Issue nicht gefunden: " + issueKey);
+			}
+			return ResponseEntity.status(ex.getStatusCode()).body(ex.getResponseBodyAsString());
+		}
+		catch (Exception ex) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Fehler: " + ex.getMessage());
+		}
 	}
 
 }

@@ -119,7 +119,6 @@ class JiraIssueIntegrationTest {
 				msg -> assertThat(msg).containsIgnoringCase("timed out"));
 	}
 
-	@Disabled("Netzwerkfehler lassen sich mit MockWebServer lokal nicht zuverlässig simulieren")
 	@Test
 	void testCreateIssue_jiraNetworkError() throws Exception {
 		System.out.println("[Test] testCreateIssue_jiraNetworkError");

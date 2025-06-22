@@ -1,0 +1,8 @@
+{
+  "summary": "Test-Ticket: Kommentar-API Endpunkt validieren",
+  "description": "Dieses Ticket dient zum Testen des neuen Endpunkts zum Hinzufügen von Kommentaren über die eigene API.\n\nAkzeptanzkriterien:\n- Ein Kommentar kann erfolgreich über die API zu diesem Ticket hinzugefügt werden.\n- Die API gibt den Kommentartext, Zeitstempel und Autor im Response zurück.",
+  "issueType": "Task",
+  "projectKey": "PET",
+  "components": ["Backend"],
+  "labels": ["api", "test", "kommentar"]
+}

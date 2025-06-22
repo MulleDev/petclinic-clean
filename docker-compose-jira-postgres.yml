@@ -1,18 +1,38 @@
 version: '3.8'
 services:
   postgres:
-    image: postgres:15
+    image: postgres:11
     container_name: jira-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: jiradb
       POSTGRES_USER: jirauser
       POSTGRES_PASSWORD: deinSicheresPasswort
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8
     ports:
       - "5432:5432"
     volumes:
       - jira-pgdata:/var/lib/postgresql/data
 
+  jira:
+    image: cptactionhank/atlassian-jira-software:latest
+    container_name: jira
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/jiradb
+      - ATL_JDBC_USER=jirauser
+      - ATL_JDBC_PASSWORD=deinSicheresPasswort
+      - JVM_MINIMUM_MEMORY=1024m
+      - JVM_MAXIMUM_MEMORY=2048m
+    ports:
+      - "8081:8080"
+    volumes:
+      - jira-home:/var/atlassian/jira
+
 volumes:
   jira-pgdata:
+    driver: local
+  jira-home:
     driver: local
