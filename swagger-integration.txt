@@ -1,0 +1,16 @@
+# Add Springdoc OpenAPI dependency for Swagger UI
+# In your pom.xml, add:
+
+<dependency>
+  <groupId>org.springdoc</groupId>
+  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+  <version>2.5.0</version>
+</dependency>
+
+# After adding, run `./mvnw clean install` to update dependencies.
+
+# Swagger UI will be available at:
+# http://localhost:8080/swagger-ui.html
+# (Port ggf. anpassen)
+
+# Annotate your REST controller for documentation
