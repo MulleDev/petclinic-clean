@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS vet_specialties (
 CREATE TABLE IF NOT EXISTS types (
   id INT(4) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(80),
+  description VARCHAR(255),
   INDEX(name)
 ) engine=InnoDB;
 
