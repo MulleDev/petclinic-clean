@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="fragments/layout :: layout (~{::body}, 'pet-types')">
+<body>
+<div class="container">
+    <h2 th:text="#{petTypesManagement}">Pet Typen verwalten</h2>
+    <button class="btn btn-primary mb-3" data-pw="add-pet-type" id="showAddPetTypeBtn" th:text="#{addPetType}">Neuen Pet Typ anlegen</button>
+    <form id="addPetTypeForm" style="display:none" onsubmit="return addPetType(event)">
+        <div class="mb-3">
+            <label for="name" th:text="#{name}">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" th:text="#{description}">Beschreibung</label>
+            <input type="text" class="form-control" id="description" name="description">
+        </div>
+        <button type="submit" class="btn btn-success" data-pw="save-pet-type" th:text="#{save}">Speichern</button>
+    </form>
+    <table class="table table-striped" id="petTypesTable">
+        <thead>
+        <tr>
+            <th th:text="#{name}">Name</th>
+            <th th:text="#{description}">Beschreibung</th>
+        </tr>
+        </thead>
+        <tbody id="petTypesTbody">
+        <tr th:each="petType : ${petTypes}" th:attr="data-pw-row=${petType.id}">
+            <td th:text="${petType.name}">Typname</td>
+            <td th:text="${petType.description}">Beschreibung</td>
+            <td>
+                <button class="btn btn-sm btn-secondary"
+                        th:attr="data-pw='edit-pet-type-' + ${petType.id}"
+                        th:attrappend="data-id=${petType.id},data-name=${petType.name},data-description=${petType.description}"
+                        onclick="showEditPetTypeForm(this)">
+                    Bearbeiten
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        th:attr="data-pw='delete-pet-type-' + ${petType.id}"
+                        th:onclick="'deletePetType(' + ${petType.id} + ')'">
+                    Löschen
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <form id="editPetTypeForm" style="display:none" onsubmit="return editPetType(event)">
+        <input type="hidden" id="editId" name="id">
+        <div class="mb-3">
+            <label for="editName" th:text="#{name}">Name</label>
+            <input type="text" class="form-control" id="editName" name="name" required data-pw="pet-type-name-input">
+        </div>
+        <div class="mb-3">
+            <label for="editDescription" th:text="#{description}">Beschreibung</label>
+            <input type="text" class="form-control" id="editDescription" name="description" data-pw="pet-type-description-input">
+        </div>
+        <button type="submit" class="btn btn-success" th:text="#{save}" data-pw="save-edit-pet-type">Speichern</button>
+        <button type="button" class="btn btn-secondary" onclick="hideEditPetTypeForm()" th:text="#{cancel}">Abbrechen</button>
+    </form>
+    <script>
+    document.getElementById('showAddPetTypeBtn').addEventListener('click', function() {
+        document.getElementById('addPetTypeForm').style.display = 'block';
+        document.getElementById('name').focus();
+    });
+    async function addPetType(event) {
+        event.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const description = document.getElementById('description').value.trim();
+        if (!name) return;
+        const res = await fetch('/api/pet-types', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description })
+        });
+        if (res.ok) {
+            const newType = await res.json();
+            const tbody = document.getElementById('petTypesTbody');
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-pw-row', newType.id);
+            tr.innerHTML = `
+                <td>${newType.name}</td>
+                <td>${newType.description || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary"
+                        data-pw="edit-pet-type-${newType.id}"
+                        data-id="${newType.id}"
+                        data-name="${newType.name}"
+                        data-description="${newType.description || ''}"
+                        onclick="showEditPetTypeForm(this)">
+                        ${typeof I18N_EDIT !== 'undefined' ? I18N_EDIT : 'Bearbeiten'}
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                        data-pw="delete-pet-type-${newType.id}"
+                        onclick="deletePetType(${newType.id})">
+                        ${typeof I18N_DELETE !== 'undefined' ? I18N_DELETE : 'Löschen'}
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            document.getElementById('addPetTypeForm').reset();
+            document.getElementById('addPetTypeForm').style.display = 'none';
+        } else {
+            alert('Fehler beim Anlegen!');
+        }
+        return false;
+    }
+    function showEditPetTypeForm(btn) {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const description = btn.getAttribute('data-description') || '';
+        document.getElementById('editId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('editPetTypeForm').style.display = 'block';
+    }
+    function hideEditPetTypeForm() {
+        document.getElementById('editPetTypeForm').style.display = 'none';
+    }
+    async function editPetType(event) {
+        event.preventDefault();
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value.trim();
+        const description = document.getElementById('editDescription').value.trim();
+        if (!name) return;
+        const res = await fetch(`/api/pet-types/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description })
+        });
+        if (res.ok) {
+            const row = document.querySelector(`[data-pw-row='${id}']`);
+            if (row) {
+                row.children[0].textContent = name;
+                row.children[1].textContent = description;
+            }
+            hideEditPetTypeForm();
+        } else {
+            alert('Fehler beim Bearbeiten!');
+        }
+        return false;
+    }
+    async function deletePetType(id) {
+        if (!confirm('Wirklich löschen?')) return;
+        const res = await fetch(`/api/pet-types/${id}`, { method: 'DELETE' });
+        console.log('DELETE response:', res.status, res.ok);
+        const row = document.querySelector(`[data-pw-row='${id}']`);
+        console.log('Zu löschende Zeile:', row);
+        if (res.ok || res.status === 204) {
+            if (row) {
+                row.remove();
+            } else {
+                alert('Zeile zum Löschen nicht gefunden!');
+            }
+        } else {
+            alert('Fehler beim Löschen! Status: ' + res.status);
+        }
+    }
+    </script>
+</div>
+</body>
+</html>
