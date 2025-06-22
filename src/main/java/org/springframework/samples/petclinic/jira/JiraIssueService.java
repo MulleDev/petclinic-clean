@@ -27,9 +27,10 @@ public class JiraIssueService {
 	@Value("${jira.bot-password}")
 	protected String jiraPassword;
 
-	protected final WebClient webClient;
+	protected WebClient webClient;
 
 	private static final Logger logger = LoggerFactory.getLogger(JiraIssueService.class);
+
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public JiraIssueService() {
@@ -62,7 +63,8 @@ public class JiraIssueService {
 			String jiraField = JiraFieldMappingConfig.getJiraField("epicLink");
 			if (jiraField != null) {
 				fields.put(jiraField, request.getEpicLink());
-			} else {
+			}
+			else {
 				logger.warn("Kein Mapping für KI-Feld 'epicLink'. Ticket wird nicht angelegt.");
 				throw new IllegalArgumentException("Feld 'epicLink' kann nicht gemappt werden.");
 			}
@@ -71,7 +73,8 @@ public class JiraIssueService {
 			String jiraField = JiraFieldMappingConfig.getJiraField("acceptanceCriteria");
 			if (jiraField != null) {
 				fields.put(jiraField, request.getAcceptanceCriteria());
-			} else {
+			}
+			else {
 				logger.warn("Kein Mapping für KI-Feld 'acceptanceCriteria'. Ticket wird nicht angelegt.");
 				throw new IllegalArgumentException("Feld 'acceptanceCriteria' kann nicht gemappt werden.");
 			}
@@ -92,22 +95,34 @@ public class JiraIssueService {
 			if (json.hasNonNull("key")) {
 				logger.info("Jira Issue created: {}", response);
 				return response;
-			} else {
-				logger.error("Jira Issue creation: Erfolgreiche Response, aber kein Issue-Key enthalten! Response: {}", response);
-				throw new RuntimeException("Jira Issue creation: Erfolgreiche Response, aber kein Issue-Key enthalten!");
 			}
-		} catch (WebClientResponseException ex) {
+			else {
+				logger.error("Jira Issue creation: Erfolgreiche Response, aber kein Issue-Key enthalten! Response: {}",
+						response);
+				throw new RuntimeException(
+						"Jira Issue creation: Erfolgreiche Response, aber kein Issue-Key enthalten!");
+			}
+		}
+		catch (WebClientResponseException ex) {
 			HttpStatusCode status = ex.getStatusCode();
-			String body = ex.getResponseBodyAsString();
+			String responseBody = ex.getResponseBodyAsString();
 			if (status.value() == 401 || status.value() == 403) {
-				logger.error("Jira Authentifizierungsfehler ({}): {} | Body: {}", status, ex.getMessage(), body);
-			} else if (status.is4xxClientError()) {
-				logger.error("Jira Client-Fehler ({}): {} | Body: {}", status, ex.getMessage(), body);
-			} else if (status.is5xxServerError()) {
-				logger.error("Jira Server-Fehler ({}): {} | Body: {}", status, ex.getMessage(), body);
+				logger.error("Jira Authentifizierungsfehler ({}): {} | Body: {}", status, ex.getMessage(),
+						responseBody);
+				// RuntimeException werfen, damit Retry/Fallback greift
+				throw new RuntimeException("Jira Authentifizierungsfehler: " + ex.getMessage(), ex);
+			}
+			else if (status.is4xxClientError()) {
+				logger.error("Jira Client-Fehler ({}): {} | Body: {}", status, ex.getMessage(), responseBody);
+				throw new RuntimeException("Jira Client-Fehler: " + ex.getMessage(), ex);
+			}
+			else if (status.is5xxServerError()) {
+				logger.error("Jira Server-Fehler ({}): {} | Body: {}", status, ex.getMessage(), responseBody);
+				throw new RuntimeException("Jira Server-Fehler: " + ex.getMessage(), ex);
 			}
 			throw ex;
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			logger.error("Jira Issue creation error: {}", ex.getMessage());
 			throw new RuntimeException("Jira Issue creation error: " + ex.getMessage(), ex);
 		}
@@ -117,10 +132,6 @@ public class JiraIssueService {
 	public String createIssueFallback(JiraIssueRequest request, Throwable t) {
 		logger.error("Jira Issue creation failed after retries: {}", t.getMessage());
 		throw new RuntimeException("Jira Issue creation failed after retries", t);
-	}
-
-	private boolean isCritical(HttpStatusCode status) {
-		return status.is5xxServerError();
 	}
 
 }
