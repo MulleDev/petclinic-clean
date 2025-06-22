@@ -1,15 +1,21 @@
 package org.springframework.samples.petclinic.jira;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class JiraIssueRequest {
 
+	@NotBlank(message = "projectKey ist Pflicht")
 	private String projectKey;
 
+	@NotBlank(message = "summary ist Pflicht")
 	private String summary;
 
+	@NotBlank(message = "description ist Pflicht")
 	private String description;
 
+	@NotBlank(message = "issueType ist Pflicht")
 	private String issueType;
 
 	private List<String> components;

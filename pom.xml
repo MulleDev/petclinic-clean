@@ -71,6 +71,11 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- WebClient für moderne HTTP-Requests -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
 
     <!-- Databases - Uses H2 by default -->
     <dependency>
@@ -141,6 +146,11 @@
       <artifactId>mysql</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
@@ -165,6 +175,11 @@
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.1</version>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-spring-boot3</artifactId>
+      <version>2.2.0</version>
     </dependency>
 
   </dependencies>
