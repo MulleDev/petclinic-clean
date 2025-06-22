@@ -4,19 +4,19 @@
 
 <body>
 
-  <h2 th:text="#{owner}">Owner</h2>
+  <h2 th:text="#{owner}" data-i18n="owner">Owner</h2>
   <form th:object="${owner}" class="form-horizontal" id="add-owner-form" method="post" data-pw="owner-form">
     <div class="form-group has-feedback">
-      <input th:replace="~{fragments/inputField :: input (#{firstName}, 'firstName', 'text')}" />
-      <input th:replace="~{fragments/inputField :: input (#{lastName}, 'lastName', 'text')}" />
-      <input th:replace="~{fragments/inputField :: input (#{address}, 'address', 'text')}" />
-      <input th:replace="~{fragments/inputField :: input (#{city}, 'city', 'text')}" />
-      <input th:replace="~{fragments/inputField :: input (#{telephone}, 'telephone', 'text')}" />
+      <input th:replace="~{fragments/inputField :: input (#{firstName}, 'firstName', 'text')}" data-i18n-label="firstName" />
+      <input th:replace="~{fragments/inputField :: input (#{lastName}, 'lastName', 'text')}" data-i18n-label="lastName" />
+      <input th:replace="~{fragments/inputField :: input (#{address}, 'address', 'text')}" data-i18n-label="address" />
+      <input th:replace="~{fragments/inputField :: input (#{city}, 'city', 'text')}" data-i18n-label="city" />
+      <input th:replace="~{fragments/inputField :: input (#{telephone}, 'telephone', 'text')}" data-i18n-label="telephone" />
     </div>
     <div class="form-group">
       <div class="col-sm-offset-2 col-sm-10">
         <button th:with="text=${owner['new']} ? #{addOwner} : #{updateOwner}" class="btn btn-primary" type="submit"
-          th:text="${text}" data-pw="owner-submit">Add Owner</button>
+          th:text="${text}" data-pw="owner-submit" data-i18n="addOrUpdateOwner">Add Owner</button>
       </div>
     </div>
   </form>
