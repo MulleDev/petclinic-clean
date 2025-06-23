@@ -71,4 +71,12 @@ export class OwnerPage {
     );
     return typeDDs.some(type => type.toLowerCase() === petType.toLowerCase());
   }
+
+  async checkLabels(labels: Record<string, string>) {
+    await expect(this.page.locator('[data-i18n="ownerInformation"]')).toHaveText(labels.ownerInformation);
+    await expect(this.page.locator('th[data-i18n="name"]')).toHaveText(labels.name);
+    await expect(this.page.locator('th[data-i18n="address"]')).toHaveText(labels.address);
+    await expect(this.page.locator('th[data-i18n="city"]')).toHaveText(labels.city);
+    await expect(this.page.locator('th[data-i18n="telephone"]')).toHaveText(labels.telephone);
+  }
 }

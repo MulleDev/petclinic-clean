@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'html',
   use: {
-    baseURL: 'https://petclinic-playwright-copilot-213a6b602332.herokuapp.com/',
+    baseURL: 'http://localhost:8080/', // <-- Lokale Umgebung
     testIdAttribute: 'data-pw',
     trace: 'on-first-retry',
     headless: false,

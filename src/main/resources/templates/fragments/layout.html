@@ -9,7 +9,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="shortcut icon" type="image/x-icon" th:href="@{/resources/images/favicon.png}">
-  <title th:text="#{layoutTitle}">PetClinic :: a Spring Framework demonstration</title>
+  <title th:text="#{layoutTitle}" data-i18n="layoutTitle">PetClinic :: a Spring Framework demonstration</title>
   <link th:href="@{/webjars/font-awesome/css/font-awesome.min.css}" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/resources/css/petclinic.css}" />
 
@@ -27,42 +27,21 @@
 
         <ul class="navbar-nav me-auto mb-2 mb-lg-0" th:remove="all">
 
-          <li th:fragment="menuItem (link,active,title,glyph,text,dataPw)" th:class="nav-item" th:attr="data-pw=${dataPw}">
+          <li th:fragment="menuItem (link,active,title,glyph,i18nKey,dataPw)" th:class="nav-item" th:attr="data-pw=${dataPw}">
             <a th:class="${active==menu ? 'nav-link active' : 'nav-link'}" th:href="@{__${link}__}" th:title="${title}">
               <span th:class="'fa fa-'+${glyph}" class="fa fa-home"></span>
-              <span th:text="${text}">Template</span>
+              <span th:attr="data-i18n=${i18nKey}"></span>
             </a>
           </li>
 
         </ul>
 
         <ul class="nav navbar-nav me-auto">
-
-          <li th:replace="~{::menuItem ('/','home','home page','home',#{home},'nav-home')}">
-            <span class="fa fa-home" aria-hidden="true"></span>
-            <span th:text="#{home}">Home</span>
-          </li>
-
-          <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search',#{findOwners},'nav-find-owners')}">
-            <span class="fa fa-search" aria-hidden="true"></span>
-            <span th:text="#{findOwners}">Find owners</span>
-          </li>
-
-          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list',#{vets},'nav-vets')}">
-            <span class="fa fa-th-list" aria-hidden="true"></span>
-            <span th:text="#{vets}">Veterinarians</span>
-          </li>
-
-          <li th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle',#{error},'nav-error')}">
-            <span class="fa exclamation-triangle" aria-hidden="true"></span>
-            <span th:text="#{error}">Error</span>
-          </li>
-
-          <li th:replace="~{::menuItem ('/pet-types','pet-types','pet types management','paw',#{petTypesManagement},'nav-pet-types')}">
-            <span class="fa fa-paw" aria-hidden="true"></span>
-            <span th:text="#{petTypesManagement}">Pet Typen verwalten</span>
-          </li>
-
+          <li th:replace="~{::menuItem ('/','home','home page','home','home','nav-home')}"></li>
+          <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search','findOwners','nav-find-owners')}"></li>
+          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list','vets','nav-vets')}"></li>
+          <li th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle','error','nav-error')}"></li>
+          <li th:replace="~{::menuItem ('/pet-types','pet-types','pet types management','paw','petTypesManagement','nav-pet-types')}"></li>
         </ul>
       </div>
     </div>
@@ -85,6 +64,66 @@
     </div>
   </div>
 
+  <!-- Language Switcher Combobox im Footer -->
+  <div style="position: fixed; right: 20px; bottom: 10px; z-index: 9999;">
+    <select id="language-switcher" data-pw="language-combobox" class="form-select form-select-sm" style="min-width: 120px;">
+      <option value="" data-pw="language-option-loading" th:text="#{loading}" data-i18n="loading"></option>
+    </select>
+  </div>
+  <script>
+    // Sprachumschaltung: Combobox dynamisch befüllen und Übersetzungen laden
+    async function loadLanguages() {
+      const select = document.getElementById('language-switcher');
+      select.innerHTML = '';
+      const resp = await fetch('/api/i18n/available');
+      const langs = await resp.json();
+      const langLabels = {
+        'default': 'Standard', 'de': 'Deutsch', 'en': 'English', 'es': 'Español', 'fa': 'فارسی', 'ko': '한국어', 'pt': 'Português', 'ru': 'Русский', 'tr': 'Türkçe'
+      };
+      langs.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = langLabels[l] || l;
+        opt.setAttribute('data-pw', 'language-option-' + l);
+        select.appendChild(opt);
+      });
+      // Setze gespeicherte Sprache
+      const saved = localStorage.getItem('lang') || 'default';
+      select.value = saved;
+    }
+    async function loadTranslations(lang) {
+      const resp = await fetch('/api/i18n/' + lang);
+      if (!resp.ok) return;
+      const messages = await resp.json();
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (messages[key]) {
+          el.textContent = messages[key];
+        } else {
+          el.textContent = key; // Fallback: Key anzeigen, falls keine Übersetzung vorhanden
+        }
+      });
+      // Setze globale JS-Variablen für dynamische Texte
+      window.I18N_EDIT = messages['edit'];
+      window.I18N_DELETE = messages['delete'];
+      window.I18N_CONFIRM_DELETE = messages['confirmDelete'];
+      window.I18N_ERROR_ADD = messages['errorAdd'];
+      window.I18N_ERROR_EDIT = messages['errorEdit'];
+      window.I18N_ERROR_DELETE = messages['errorDelete'];
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLanguages().then(() => {
+        const select = document.getElementById('language-switcher');
+        // Initiale Übersetzung
+        loadTranslations(select.value);
+        select.addEventListener('change', e => {
+          const lang = e.target.value;
+          localStorage.setItem('lang', lang);
+          loadTranslations(lang);
+        });
+      });
+    });
+  </script>
   <script th:src="@{/webjars/bootstrap/dist/js/bootstrap.bundle.min.js}"></script>
 
 </body>
