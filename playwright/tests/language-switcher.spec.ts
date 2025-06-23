@@ -8,7 +8,7 @@ test.describe('Language Switcher', () => {
     // Warte auf die Combobox
     const combobox = await page.waitForSelector('[data-pw="language-combobox"]');
     // Teste alle verfügbaren Sprachen
-    const langs = await page.$$eval('[data-pw^="language-option-"]', opts => opts.map(o => o.value));
+    const langs = await page.$$eval('[data-pw^="language-option-"]', opts => opts.map(o => (o as HTMLOptionElement).value));
     // Mappe Sprache auf einen typischen UI-Text
     const expectedTexts = {
       'default': 'Welcome',
@@ -21,7 +21,7 @@ test.describe('Language Switcher', () => {
       'ru': 'Добро пожаловать',
       'tr': 'Hoş geldiniz'
     };
-    for (const lang of langs) {
+    for (const lang of langs as (keyof typeof expectedTexts)[]) {
       await combobox.selectOption(lang);
       await page.waitForTimeout(300); // Warte auf AJAX
       const text = await page.locator('[data-i18n="welcome"]').textContent();

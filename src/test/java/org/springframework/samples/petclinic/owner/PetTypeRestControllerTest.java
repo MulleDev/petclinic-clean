@@ -36,12 +36,8 @@ class PetTypeRestControllerTest {
 	void createAndDeletePetType_shouldWork() throws Exception {
 		// Create
 		String newTypeJson = "{\"name\":\"TestType\",\"description\":\"TestDesc\"}";
-		String location = mockMvc
-			.perform(post("/api/pet-types").contentType(MediaType.APPLICATION_JSON).content(newTypeJson))
-			.andExpect(status().isCreated())
-			.andReturn()
-			.getResponse()
-			.getHeader("Location");
+		mockMvc.perform(post("/api/pet-types").contentType(MediaType.APPLICATION_JSON).content(newTypeJson))
+			.andExpect(status().isCreated());
 		// Delete (by finding the new type by name)
 		mockMvc.perform(get("/api/pet-types"))
 			.andExpect(status().isOk())
