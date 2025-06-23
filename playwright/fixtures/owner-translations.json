@@ -1,0 +1,23 @@
+{
+  "de": {
+    "ownerInformation": "Besitzerinformationen",
+    "name": "Name",
+    "address": "Adresse",
+    "city": "Stadt",
+    "telephone": "Telefon"
+  },
+  "en": {
+    "ownerInformation": "Owner Information",
+    "name": "Name",
+    "address": "Address",
+    "city": "City",
+    "telephone": "Telephone"
+  },
+  "ru": {
+    "ownerInformation": "Информация о владельце",
+    "name": "Имя",
+    "address": "Адрес",
+    "city": "Город",
+    "telephone": "Телефон"
+  }
+}
