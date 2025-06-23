@@ -71,7 +71,35 @@
     </select>
   </div>
   <script>
-    // Sprachumschaltung: Combobox dynamisch befüllen und Übersetzungen laden
+    // Utility: Optimistisches Rendering für i18n-Textupdates
+    async function updateI18nTexts(lang) {
+      // Lade neue Übersetzungen, lasse alte Texte bis dahin stehen
+      try {
+        const resp = await fetch('/api/i18n/' + lang);
+        if (!resp.ok) return;
+        const messages = await resp.json();
+        // Atomic Update: Alle Texte in einem Schritt ersetzen
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (messages[key]) {
+            el.textContent = messages[key];
+          } else {
+            el.textContent = key; // Fallback
+          }
+        });
+        // Setze globale JS-Variablen für dynamische Texte
+        window.I18N_EDIT = messages['edit'];
+        window.I18N_DELETE = messages['delete'];
+        window.I18N_CONFIRM_DELETE = messages['confirmDelete'];
+        window.I18N_ERROR_ADD = messages['errorAdd'];
+        window.I18N_ERROR_EDIT = messages['errorEdit'];
+        window.I18N_ERROR_DELETE = messages['errorDelete'];
+      } catch (e) {
+        // Fehler: Alte Texte bleiben, optional Meldung anzeigen
+        console.error('Fehler beim Nachladen von Übersetzungen', e);
+      }
+    }
     async function loadLanguages() {
       const select = document.getElementById('language-switcher');
       select.innerHTML = '';
@@ -91,35 +119,15 @@
       const saved = localStorage.getItem('lang') || 'default';
       select.value = saved;
     }
-    async function loadTranslations(lang) {
-      const resp = await fetch('/api/i18n/' + lang);
-      if (!resp.ok) return;
-      const messages = await resp.json();
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (messages[key]) {
-          el.textContent = messages[key];
-        } else {
-          el.textContent = key; // Fallback: Key anzeigen, falls keine Übersetzung vorhanden
-        }
-      });
-      // Setze globale JS-Variablen für dynamische Texte
-      window.I18N_EDIT = messages['edit'];
-      window.I18N_DELETE = messages['delete'];
-      window.I18N_CONFIRM_DELETE = messages['confirmDelete'];
-      window.I18N_ERROR_ADD = messages['errorAdd'];
-      window.I18N_ERROR_EDIT = messages['errorEdit'];
-      window.I18N_ERROR_DELETE = messages['errorDelete'];
-    }
     document.addEventListener('DOMContentLoaded', () => {
       loadLanguages().then(() => {
         const select = document.getElementById('language-switcher');
         // Initiale Übersetzung
-        loadTranslations(select.value);
+        updateI18nTexts(select.value);
         select.addEventListener('change', e => {
           const lang = e.target.value;
           localStorage.setItem('lang', lang);
-          loadTranslations(lang);
+          updateI18nTexts(lang);
         });
       });
     });
