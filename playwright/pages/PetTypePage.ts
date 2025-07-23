@@ -11,14 +11,15 @@ export class PetTypePage {
     const addBtn = this.page.locator('[data-pw="add-pet-type"]');
     await expect(addBtn).toBeVisible();
     await addBtn.click();
-    const nameInput = this.page.locator('#addPetTypeForm input[name="name"]');
-    const descInput = this.page.locator('#addPetTypeForm input[name="description"]');
-    const saveBtn = this.page.locator('#addPetTypeForm [data-pw="save-pet-type"]');
+    const form = this.page.locator('[data-pw="pet-type-form"]');
+    const nameInput = form.locator('[data-pw="pet-type-name"]');
+    const descInput = form.locator('[data-pw="pet-type-description"]');
+    const saveBtn = form.locator('[data-pw="save-pet-type"]');
     await expect(nameInput).toBeVisible();
     await nameInput.fill(name);
     await descInput.fill(desc);
     await saveBtn.click();
-    await expect(this.page.locator('#addPetTypeForm')).toBeHidden();
+    await expect(this.page).not.toHaveURL(/\/pettypes\/(new|\d+\/edit)$/);
   }
 
   rowByName(name: string): Locator {

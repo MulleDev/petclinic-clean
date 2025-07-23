@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body}, 'verwaltung-vets')}">
+<body>
+<div class="container">
+    <h2 th:text="#{vet.admin.form.title}">Tierarzt verwalten</h2>
+    <form th:action="@{${formAction}}" th:object="${vetForm}" method="post">
+        <div th:if="${#fields.hasErrors()}" class="alert alert-danger">
+            <ul>
+                <li th:each="err : ${#fields.errors('*')}">
+                    <span th:text="${err}"></span>
+                </li>
+            </ul>
+        </div>
+        <div>
+            <label for="firstName" th:text="#{vet.firstname}">Vorname</label>
+            <input type="text" id="firstName" th:field="*{firstName}"/>
+            <div th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+        </div>
+        <div>
+            <label for="lastName" th:text="#{vet.lastname}">Nachname</label>
+            <input type="text" id="lastName" th:field="*{lastName}"/>
+            <div th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+        </div>
+        <div>
+            <label for="email" th:text="#{vet.email}">E-Mail</label>
+            <input type="email" id="email" th:field="*{email}"/>
+            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+        </div>
+        <div>
+            <label for="telephone" th:text="#{vet.telephone}">Telefon</label>
+            <input type="text" id="telephone" th:field="*{telephone}"/>
+            <div th:if="${#fields.hasErrors('telephone')}" th:errors="*{telephone}"></div>
+        </div>
+        <button type="submit" th:text="#{vet.admin.save}">Speichern</button>
+        <a th:href="@{/verwaltung/vets}" th:text="#{vet.admin.cancel}">Abbrechen</a>
+    </form>
+</div>
+</body>
+</html>

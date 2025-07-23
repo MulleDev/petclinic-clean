@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body}, 'verwaltung-pettypes')}">
+<body>
+<div class="container">
+    <h2 th:text="#{petTypesManagement}" data-i18n="petTypesManagement">Pet Types verwalten</h2>
+    <div th:if="${success}" class="alert alert-success" th:text="#{${success}}"></div>
+    <a class="btn btn-primary mb-3" th:href="@{/verwaltung/pettypes/new}" th:text="#{addPetType}" data-i18n="addPetType" data-pw="add-pet-type">Neuen Pet Type anlegen</a>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th th:text="#{name}" data-i18n="name">Name</th>
+            <th th:text="#{description}" data-i18n="description">Beschreibung</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="petType : ${petTypes}">
+            <td th:text="${petType.name}">Typname</td>
+            <td th:text="${petType.description}">Beschreibung</td>
+            <td>
+                <a class="btn btn-sm btn-secondary" th:href="@{'/verwaltung/pettypes/' + ${petType.id} + '/edit'}" th:text="#{edit}" data-i18n="edit" data-pw="edit-pet-type-[[${petType.id}]]">Bearbeiten</a>
+                <form th:action="@{'/verwaltung/pettypes/' + ${petType.id} + '/delete'}" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-sm btn-danger" th:text="#{delete}" data-i18n="delete" data-pw="delete-pet-type-[[${petType.id}]]" onclick="return confirm('#{confirmDelete}')">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

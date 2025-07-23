@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body}, 'verwaltung-vets')}">
+<body>
+<div class="container">
+    <h2 th:text="#{vet.admin.title}">Tierärzte verwalten</h2>
+    <div th:if="${success}" class="alert alert-success" th:text="#{${success}}"></div>
+    <a th:href="@{/verwaltung/vets/new}" class="btn btn-primary" th:text="#{vet.admin.add}">Neuen Tierarzt anlegen</a>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th th:text="#{vet.firstname}">Vorname</th>
+            <th th:text="#{vet.lastname}">Nachname</th>
+            <th th:text="#{vet.email}">E-Mail</th>
+            <th th:text="#{vet.telephone}">Telefon</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="vet : ${vets}">
+            <td th:text="${vet.firstName}"></td>
+            <td th:text="${vet.lastName}"></td>
+            <td th:text="${vet.email}"></td>
+            <td th:text="${vet.telephone}"></td>
+            <td>
+                <a class="btn btn-sm btn-secondary" th:href="@{'/verwaltung/vets/' + ${vet.id} + '/edit'}" th:text="#{vet.admin.edit}">Bearbeiten</a>
+                <form th:action="@{'/verwaltung/vets/' + ${vet.id} + '/delete'}" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-sm btn-danger" th:text="#{delete}" data-i18n="delete" onclick="return confirm('#{confirmDelete}')">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

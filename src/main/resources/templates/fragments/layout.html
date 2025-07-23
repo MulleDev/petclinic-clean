@@ -40,8 +40,17 @@
           <li th:replace="~{::menuItem ('/','home','home page','home','home','nav-home')}"></li>
           <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search','findOwners','nav-find-owners')}"></li>
           <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list','vets','nav-vets')}"></li>
+          <!-- Verwaltung Dropdown -->
+          <li class="nav-item dropdown" th:classappend="${active == 'verwaltung' ? 'active' : ''}">
+            <a class="nav-link dropdown-toggle" href="#" id="verwaltungDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" th:title="#{verwaltung}" data-i18n="verwaltung">
+              <span class="fa fa-cog"></span> <span th:text="#{verwaltung}"></span>
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="verwaltungDropdown">
+              <li><a class="dropdown-item" th:href="@{/verwaltung/pettypes}" th:text="#{verwaltung.pettypes}" data-i18n="verwaltung.pettypes"></a></li>
+              <li><a class="dropdown-item" th:href="@{/verwaltung/vets}" th:text="#{verwaltung.vets}" data-i18n="verwaltung.vets"></a></li>
+            </ul>
+          </li>
           <li th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle','error','nav-error')}"></li>
-          <li th:replace="~{::menuItem ('/pet-types','pet-types','pet types management','paw','petTypesManagement','nav-pet-types')}"></li>
         </ul>
       </div>
     </div>

@@ -1,0 +1,14 @@
+Story: Besitzer-Modell und Datenbank um eindeutige, verpflichtende E-Mail erweitern
+
+Beschreibung:
+Als Entwickler möchte ich das Owner-Modell und die Datenbank um das Feld „E-Mail“ erweitern, damit die E-Mail-Adresse eines Besitzers eindeutig, verpflichtend und maximal 255 Zeichen lang gespeichert und validiert werden kann.
+
+Akzeptanzkriterien:
+- Das Owner-Entity und die Datenbanktabelle werden um das Feld „E-Mail“ ergänzt (@Email, @NotBlank, @Column(length=255, unique=true))
+- Die E-Mail ist ein Pflichtfeld und muss eindeutig sein (Unique Constraint)
+- Die E-Mail wird beim Speichern auf gültiges Format und Eindeutigkeit geprüft
+- Fehlermeldungen erscheinen bei ungültigem Format und bei Duplikaten
+- Fehlermeldungen sind internationalisiert
+- Bestehende Funktionen (Anlegen, Bearbeiten, Anzeigen) unterstützen das neue Feld
+- Migrationsskript für die Datenbank ist vorhanden (z. B. Flyway/Liquibase)
+- Bestehende Tests sind angepasst und decken das neue Feld ab

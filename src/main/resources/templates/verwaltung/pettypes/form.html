@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body}, 'verwaltung-pettypes')}">
+<body>
+<div class="container">
+    <h2 th:text="${petType.id == null} ? #{addPetType} : #{editPetType}" data-i18n="addPetType">Pet Type</h2>
+    <form th:action="${petType.id == null} ? @{/verwaltung/pettypes/new} : @{'/verwaltung/pettypes/' + ${petType.id} + '/edit'}" th:object="${petType}" method="post" data-pw="pet-type-form">
+        <div th:if="${#fields.hasErrors()}" class="alert alert-danger">
+            <ul>
+                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+            </ul>
+        </div>
+        <div class="mb-3">
+            <label for="name" th:text="#{name}" data-i18n="name">Name</label>
+            <input type="text" class="form-control" id="name" th:field="*{name}" required data-pw="pet-type-name">
+        </div>
+        <div class="mb-3">
+            <label for="description" th:text="#{description}" data-i18n="description">Beschreibung</label>
+            <input type="text" class="form-control" id="description" th:field="*{description}" data-pw="pet-type-description">
+        </div>
+        <button type="submit" class="btn btn-success" th:text="#{save}" data-i18n="save" data-pw="save-pet-type">Speichern</button>
+        <a class="btn btn-secondary" th:href="@{/verwaltung/pettypes}" th:text="#{cancel}" data-i18n="cancel" data-pw="cancel-pet-type">Abbrechen</a>
+    </form>
+</div>
+</body>
+</html>

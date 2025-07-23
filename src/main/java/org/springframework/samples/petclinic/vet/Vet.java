@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.springframework.samples.petclinic.model.NamedEntity;
 import org.springframework.samples.petclinic.model.Person;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -49,6 +50,12 @@ public class Vet extends Person {
 			inverseJoinColumns = @JoinColumn(name = "specialty_id"))
 	private Set<Specialty> specialties;
 
+	@Column(name = "email")
+	private String email;
+
+	@Column(name = "telephone")
+	private String telephone;
+
 	protected Set<Specialty> getSpecialtiesInternal() {
 		if (this.specialties == null) {
 			this.specialties = new HashSet<>();
@@ -69,6 +76,22 @@ public class Vet extends Person {
 
 	public void addSpecialty(Specialty specialty) {
 		getSpecialtiesInternal().add(specialty);
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getTelephone() {
+		return telephone;
+	}
+
+	public void setTelephone(String telephone) {
+		this.telephone = telephone;
 	}
 
 }
