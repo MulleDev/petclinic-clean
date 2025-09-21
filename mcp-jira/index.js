@@ -3,12 +3,111 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+
+// Lösche alle Tickets im PET Projekt
+app.delete('/delete-all-tickets', async (req, res) => {
+  try {
+    console.log('🗑️ Lösche alle Tickets im PET Projekt...');
+    
+    // Hole alle Tickets
+    const searchResponse = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/search?jql=project=PET`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const tickets = searchResponse.data.issues;
+    console.log(`📊 Gefunden: ${tickets.length} Tickets`);
+    
+    if (tickets.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'Keine Tickets zum Löschen gefunden',
+        deleted: 0
+      });
+    }
+    
+    // Lösche alle Tickets
+    const deletePromises = tickets.map(async (ticket) => {
+      try {
+        await axios.delete(
+          `${JIRA_BASE_URL}/rest/api/2/issue/${ticket.key}`,
+          {
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        console.log(`✅ Ticket ${ticket.key} gelöscht`);
+        return ticket.key;
+      } catch (error) {
+        console.log(`❌ Fehler beim Löschen von ${ticket.key}: ${error.message}`);
+        return null;
+      }
+    });
+    
+    const deletedTickets = await Promise.all(deletePromises);
+    const successfulDeletions = deletedTickets.filter(key => key !== null);
+    
+    res.json({
+      success: true,
+      message: `${successfulDeletions.length} von ${tickets.length} Tickets erfolgreich gelöscht`,
+      deleted: successfulDeletions.length,
+      total: tickets.length,
+      deletedTickets: successfulDeletions
+    });
+    
+  } catch (error) {
+    console.error('❌ Fehler beim Löschen der Tickets:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Lösche spezifisches Ticket
+app.delete('/delete-ticket/:key', async (req, res) => {
+  try {
+    const ticketKey = req.params.key;
+    console.log(`🗑️ Lösche Ticket: ${ticketKey}`);
+    
+    await axios.delete(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`✅ Ticket ${ticketKey} erfolgreich gelöscht`);
+    res.json({
+      success: true,
+      message: `Ticket ${ticketKey} erfolgreich gelöscht`
+    });
+    
+  } catch (error) {
+    console.error(`❌ Fehler beim Löschen von Ticket ${req.params.key}:`, error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+const PORT = process.env.PORT || 3001;
 
 // Jira-Konfiguration
-const JIRA_BASE_URL = 'http://localhost:8081';
-const JIRA_USERNAME = 'admin';
-const JIRA_PASSWORD = 'admin';
+const JIRA_BASE_URL = process.env.JIRA_BASE_URL || 'http://localhost:8081';
+const JIRA_USERNAME = process.env.JIRA_USERNAME || 'admin';
+const JIRA_PASSWORD = process.env.JIRA_PASSWORD || 'admin';
 
 // Basic Auth für Jira
 const jiraAuth = {
@@ -17,7 +116,8 @@ const jiraAuth = {
 };
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Erhöhe das Request-Größenlimit
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Template-Definitionen für verschiedene Ticket-Typen
 const TICKET_TEMPLATES = {
@@ -25,7 +125,7 @@ const TICKET_TEMPLATES = {
     name: 'Bug Report',
     issueType: 'Bug',
     priority: 'High',
-    summary: 'Bug: [KURZE BESCHREIBUNG]',
+    summary: '[TITEL]',
     description: `**🐛 Problem Beschreibung:**
 [Beschreibe das Problem kurz und präzise]
 
@@ -58,7 +158,7 @@ const TICKET_TEMPLATES = {
     name: 'Feature Request',
     issueType: 'Story',
     priority: 'Medium',
-    summary: 'Feature: [FEATURE NAME]',
+    summary: '[TITEL]',
     description: `**🎯 User Story:**
 Als **[Benutzertyp]** möchte ich **[gewünschte Funktionalität]**, damit **[Nutzen/Grund]**.
 
@@ -87,30 +187,19 @@ Als **[Benutzertyp]** möchte ich **[gewünschte Funktionalität]**, damit **[Nu
     name: 'Aufgabe/Task',
     issueType: 'Aufgabe',
     priority: 'Medium',
-    summary: 'Task: [AUFGABEN BESCHREIBUNG]',
-    description: `**📋 Aufgaben Beschreibung:**
-[Beschreibe die Aufgabe detailliert]
+    summary: '[TITEL]',
+    description: `**Beschreibung:** [Beschreibe die Aufgabe]
 
-**🎯 Ziel:**
-[Was soll erreicht werden?]
+**Ziel:** [Was soll erreicht werden?]
 
-**📝 To-Do Liste:**
+**To-Do:**
 - [ ] [Schritt 1]
 - [ ] [Schritt 2]
 - [ ] [Schritt 3]
-- [ ] [Schritt 4]
 
-**📚 Referenzen:**
-[Links zu Dokumentation, ähnlichen Tickets, etc.]
-
-**⏰ Geschätzte Zeit:**
-[z.B. 2 Stunden, 1 Tag, etc.]
-
-**✅ Definition of Done:**
+**Definition of Done:**
 - [ ] Implementierung abgeschlossen
-- [ ] Code Review durchgeführt
-- [ ] Tests erfolgreich
-- [ ] Dokumentation aktualisiert`,
+- [ ] Tests erfolgreich`,
     labels: ['task']
   },
 
@@ -118,41 +207,28 @@ Als **[Benutzertyp]** möchte ich **[gewünschte Funktionalität]**, damit **[Nu
     name: 'PetClinic Bug Report',
     issueType: 'Bug',
     priority: 'High',
-    summary: 'PetClinic Bug: [MODUL] - [BESCHREIBUNG]',
-    description: `**🐛 PetClinic Bug Report**
+    summary: '[TITEL]',
+    description: `**Bug Report**
 
-**📍 Betroffenes Modul:**
-- [ ] Besitzer-Verwaltung (Owner Management)
-- [ ] Haustier-Verwaltung (Pet Management)
-- [ ] Tierarzt-Verwaltung (Vet Management)
-- [ ] Besuch-Verwaltung (Visit Management)
-- [ ] Startseite/Navigation
-- [ ] Sonstiges: [Spezifizieren]
+**Betroffenes Modul:** [Owner/Pet/Vet/Visit Management]
 
-**📝 Schritte zur Reproduktion:**
+**Schritte zur Reproduktion:**
 1. [SCHRITT1]
 2. [SCHRITT2]
 3. [SCHRITT3]
 
-**✅ Erwartetes Verhalten:**
-[ERWARTET]
+**Erwartetes Verhalten:** [ERWARTET]
 
-**❌ Tatsächliches Verhalten:**
-[TATSAECHLICH]
+**Tatsächliches Verhalten:** [TATSAECHLICH]
 
-**🔍 Fehlermeldung (falls vorhanden):**
+**Fehlermeldung:**
 \`\`\`
 [FEHLERMELDUNG]
 \`\`\`
 
-**🌐 Test-Umgebung:**
+**Umgebung:**
 - URL: http://localhost:8080
-- Browser: [BROWSER]
-- Java Version: [JAVA_VERSION]
-- Spring Boot Version: [SPRING_VERSION]
-
-**📷 Screenshots:**
-[Screenshots hinzufügen]`,
+- Browser: [BROWSER]`,
     labels: ['petclinic', 'bug']
   },
 
@@ -160,7 +236,7 @@ Als **[Benutzertyp]** möchte ich **[gewünschte Funktionalität]**, damit **[Nu
     name: 'PetClinic Feature',
     issueType: 'Story',
     priority: 'Medium',
-    summary: 'PetClinic Feature: [FEATURE NAME]',
+    summary: '[TITEL]',
     description: `**🎯 PetClinic Feature Request**
 
 **📍 Betroffenes Modul:**
@@ -172,30 +248,17 @@ Als **[Benutzertyp]** möchte ich **[gewünschte Funktionalität]**, damit **[Nu
 - [ ] Neues Modul: [Spezifizieren]
 
 **👤 User Story:**
-Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit **[Nutzen]**.
+**User Story:**
+Als **[User-Rolle]** möchte ich **[Funktionalität]**, damit **[Nutzen]**.
 
-**📋 Akzeptanzkriterien:**
-- [ ] Frontend-Implementierung
+**Akzeptanzkriterien:**
+- [ ] Frontend implementiert
 - [ ] Backend-API erstellt
-- [ ] Datenbank-Schema angepasst
-- [ ] Validierung implementiert
-- [ ] Unit Tests geschrieben
-- [ ] Integration Tests erstellt
-- [ ] Playwright E2E Tests hinzugefügt
-- [ ] Dokumentation aktualisiert
+- [ ] Tests geschrieben
 
-**🎨 UI/UX Anforderungen:**
-[Beschreibung der Benutzeroberfläche]
-
-**⚙️ Technische Details:**
-- Controllers: 
-- Services: 
-- Repositories: 
-- DTOs: 
-- Frontend Templates: 
-
-**🔗 Abhängigkeiten:**
-[Andere PetClinic Features oder externe Libraries]`,
+**Technische Details:**
+- Controllers: [Liste]
+- Services: [Liste]`,
     labels: ['petclinic', 'feature']
   },
 
@@ -203,34 +266,20 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Test Automation',
     issueType: 'Aufgabe',
     priority: 'Medium',
-    summary: 'Test Automation: [TEST_BESCHREIBUNG]',
-    description: `**🧪 Test Automation Aufgabe**
+    summary: '[TITEL]',
+    description: `**Test Automation**
 
-**📋 Test Beschreibung:**
-[TEST_BESCHREIBUNG]
+**Beschreibung:** [TEST_BESCHREIBUNG]
 
-**🎯 Test Ziel:**
-[Was soll getestet werden?]
+**Ziel:** [Was soll getestet werden?]
 
-**📝 Test Schritte:**
+**Test Schritte:**
 1. [Test Schritt 1]
 2. [Test Schritt 2]
-3. [Test Schritt 3]
 
-**✅ Akzeptanzkriterien:**
-- [ ] Tests implementiert
-- [ ] Tests laufen erfolgreich
-- [ ] Code Coverage ausreichend
-- [ ] Tests dokumentiert
-
-**🔧 Test Framework:**
-- [ ] Playwright E2E Tests
-- [ ] Unit Tests
-- [ ] Integration Tests
-- [ ] API Tests
-
-**📚 Referenzen:**
-[Links zu Requirements, User Stories, etc.]`,
+**Framework:**
+- [ ] Playwright E2E
+- [ ] Unit Tests`,
     labels: ['testing', 'automation']
   },
 
@@ -240,7 +289,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Playwright Test Failure',
     issueType: 'Bug',
     priority: 'High',
-    summary: 'Test Failure: [TEST_NAME] - [BROWSER]',
+    summary: '[TITEL]',
     description: `**🧪 Playwright Test Failure Report**
 
 **📋 Test Details:**
@@ -294,7 +343,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Playwright Suite Report',
     issueType: 'Aufgabe',
     priority: 'Medium',
-    summary: 'Test Suite Report: [SUITE_NAME] - [PASS_RATE]% Pass Rate',
+    summary: '[TITEL]',
     description: `**📊 Playwright Test Suite Execution Report**
 
 **📋 Suite Details:**
@@ -338,7 +387,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Flaky Test Investigation',
     issueType: 'Aufgabe',
     priority: 'High',
-    summary: 'Flaky Test: [TEST_NAME] - [FAILURE_RATE]% Failure Rate',
+    summary: '[TITEL]',
     description: `**🔄 Flaky Test Investigation**
 
 **📋 Test Information:**
@@ -396,7 +445,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Performance Investigation',
     issueType: 'Aufgabe',
     priority: 'Medium',
-    summary: 'Performance Issue: [SLOW_TESTS] slow tests detected',
+    summary: '[TITEL]',
     description: `**⚡ Performance Investigation**
 
 **📊 Performance Summary:**
@@ -438,7 +487,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Test Enhancement',
     issueType: 'Story',
     priority: 'Medium',
-    summary: 'Enhance Tests: [FEATURE_AREA] - [ENHANCEMENT_TYPE]',
+    summary: '[TITEL]',
     description: `**🚀 Test Enhancement Request**
 
 **📋 Enhancement Details:**
@@ -478,7 +527,7 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
     name: 'Test Automation',
     issueType: 'Aufgabe',
     priority: 'Medium',
-    summary: 'Test: [TEST BESCHREIBUNG]',
+    summary: '[TITEL]',
     description: `**🧪 Test Automation Task**
 
 **🎯 Test Ziel:**
@@ -509,6 +558,211 @@ Als **[Tierbesitzer/Tierarzt/Admin]** möchte ich **[Funktionalität]**, damit *
 - [ ] Code Coverage akzeptabel
 - [ ] Tests in CI/CD Pipeline integriert`,
     labels: ['testing', 'automation']
+  },
+
+  'epic': {
+    name: 'Epic',
+    issueType: 'Epic',
+    priority: 'Medium',
+    summary: '[TITEL]',
+    description: `**🎯 Epic Übersicht**
+
+**📋 Epic Beschreibung:**
+[Detaillierte Beschreibung des Epics und seiner Ziele]
+
+**💼 Business Value:**
+[Warum ist dieses Epic wichtig? Welchen Geschäftswert bringt es?]
+
+**🎯 Ziele:**
+- [Ziel 1]
+- [Ziel 2]
+- [Ziel 3]
+
+**👥 Stakeholder:**
+- Product Owner: [NAME]
+- Tech Lead: [NAME]
+- Business Analyst: [NAME]
+
+**📅 Timeline:**
+- Start: [START_DATE]
+- Ende: [END_DATE]
+- Milestones: [MAJOR_MILESTONES]
+
+**🔍 Akzeptanzkriterien:**
+- [ ] Kriterium 1
+- [ ] Kriterium 2
+- [ ] Kriterium 3
+
+**📊 Success Metrics:**
+- [Metric 1]: [Target Value]
+- [Metric 2]: [Target Value]
+- [Metric 3]: [Target Value]
+
+**🚧 Annahmen und Risiken:**
+**Annahmen:**
+- [Annahme 1]
+- [Annahme 2]
+
+**Risiken:**
+- [Risiko 1] - Mitigation: [Plan]
+- [Risiko 2] - Mitigation: [Plan]
+
+**🏁 Definition of Done:**
+- [ ] Alle Stories abgeschlossen
+- [ ] Akzeptanzkriterien erfüllt
+- [ ] Testing abgeschlossen
+- [ ] Documentation aktualisiert
+- [ ] Stakeholder Sign-off`,
+    labels: ['epic', 'planning', 'strategy']
+  },
+
+  'petclinic-epic': {
+    name: 'PetClinic Epic',
+    issueType: 'Epic',
+    priority: 'Medium',
+    summary: 'PetClinic Epic: [FEATURE_NAME]',
+    description: `**🏥 PetClinic Epic**
+
+**🎯 Feature Übersicht:**
+[Beschreibung des neuen PetClinic Features]
+
+**👨‍⚕️ Benutzer Story:**
+Als [Benutzertyp] möchte ich [Funktionalität], damit [Nutzen].
+
+**🐾 PetClinic Context:**
+- Affected Areas: [Owners/Pets/Vets/Visits]
+- Database Changes: [Yes/No - Details]
+- UI Changes: [Pages affected]
+- API Changes: [New endpoints/Modified endpoints]
+
+**🛠️ Technische Komponenten:**
+- Backend (Spring Boot): [Components]
+- Frontend (Thymeleaf): [Templates]
+- Database (H2/MySQL/PostgreSQL): [Tables]
+- Tests: [Unit/Integration/E2E]
+
+**📋 User Stories (Children):**
+- [ ] Story 1: [As a... I want... So that...]
+- [ ] Story 2: [As a... I want... So that...]
+- [ ] Story 3: [As a... I want... So that...]
+
+**🧪 Testing Strategy:**
+- [ ] Unit Tests für neue Services
+- [ ] Integration Tests für Repository Layer
+- [ ] Controller Tests für Web Layer
+- [ ] End-to-End Tests mit Playwright
+
+**📊 Akzeptanzkriterien:**
+- [ ] Feature funktional vollständig
+- [ ] Responsive Design (Mobile/Desktop)
+- [ ] Accessibility Standards erfüllt
+- [ ] Performance acceptable (<2s Ladezeit)
+- [ ] Cross-browser Kompatibilität
+
+**🚀 Deployment Kriterien:**
+- [ ] Code Review abgeschlossen
+- [ ] Alle Tests bestanden
+- [ ] Documentation aktualisiert
+- [ ] Database Migration getestet`,
+    labels: ['petclinic', 'epic', 'feature', 'spring-boot']
+  },
+
+  'subtask': {
+    name: 'Sub-Task',
+    issueType: 'Sub-task',
+    priority: 'Medium',
+    summary: '[TITEL]',
+    description: `**🔧 Sub-Task Details**
+
+**🎯 Aufgabe:**
+[Beschreibung der spezifischen Aufgabe]
+
+**📋 Parent Story/Task:**
+[Verweis auf übergeordnete Story/Task - PARENT_KEY]
+
+**🛠️ Arbeitsschritte:**
+1. [Schritt 1]
+2. [Schritt 2] 
+3. [Schritt 3]
+
+**📝 Technische Details:**
+- Component: [Affected Component]
+- Files: [Files to modify]
+- Dependencies: [Any dependencies]
+
+**✅ Akzeptanzkriterien:**
+- [ ] Implementierung abgeschlossen
+- [ ] Unit Tests geschrieben
+- [ ] Code Review durchgeführt
+- [ ] Integration erfolgreich
+
+**⏰ Geschätzter Aufwand:** [X] Stunden
+
+**🔗 Abhängigkeiten:**
+- Blockt: [Other tasks]
+- Abhängig von: [Prerequisites]`,
+    labels: ['subtask', 'development']
+  },
+
+  'petclinic-subtask': {
+    name: 'PetClinic Sub-Task',
+    issueType: 'Sub-task',
+    priority: 'Medium',
+    summary: 'PetClinic Sub-Task: [COMPONENT] - [TASK_NAME]',
+    description: `**🏥 PetClinic Sub-Task**
+
+**🎯 Aufgabe:**
+[Spezifische Aufgabe im PetClinic Kontext]
+
+**📋 Parent Story:**
+[Übergeordnete PetClinic Story - PARENT_KEY]
+
+**🐾 PetClinic Bereich:**
+- [ ] Owners Management
+- [ ] Pets Management  
+- [ ] Veterinarians
+- [ ] Visits
+- [ ] General/Infrastructure
+
+**🛠️ Technische Implementierung:**
+**Backend (Spring Boot):**
+- [ ] Entity/Model Änderungen
+- [ ] Repository Layer
+- [ ] Service Layer
+- [ ] Controller Layer
+- [ ] Validation
+
+**Frontend (Thymeleaf):**
+- [ ] Template Änderungen
+- [ ] CSS/JavaScript
+- [ ] Form Handling
+- [ ] Error Handling
+
+**Database:**
+- [ ] Schema Änderungen
+- [ ] Data Migration
+- [ ] Test Data
+
+**🧪 Testing:**
+- [ ] Unit Tests (Service Layer)
+- [ ] Integration Tests (Repository)
+- [ ] Web Layer Tests (Controller)
+- [ ] End-to-End Tests (Playwright)
+
+**📝 Implementierungs-Details:**
+- Dateien: [List of files to modify]
+- Methoden: [New/Modified methods]
+- Endpoints: [New/Modified REST endpoints]
+
+**✅ Definition of Done:**
+- [ ] Code implementiert
+- [ ] Tests geschrieben und bestanden
+- [ ] Code Review abgeschlossen
+- [ ] Dokumentation aktualisiert
+- [ ] Manuelle Tests durchgeführt
+
+**⏰ Aufwand:** [X] Stunden`,
+    labels: ['petclinic', 'subtask', 'spring-boot', 'development']
   }
 };
 
@@ -552,6 +806,8 @@ app.post('/create-from-template', async (req, res) => {
   try {
     const { 
       templateId, 
+      title,
+      description: userDescription,
       replacements = {}, 
       projectKey = 'PET',
       customFields = {} 
@@ -565,20 +821,46 @@ app.post('/create-from-template', async (req, res) => {
       });
     }
     
-    // Template-Variablen ersetzen
+    // Standard-Replacements erstellen aus title und description
+    const standardReplacements = {
+      ...replacements,
+      TITEL: title || '',
+      TITLE: title || '',
+      'KURZE BESCHREIBUNG': title || '',
+      'KURZE_BESCHREIBUNG': title || '',
+      BESCHREIBUNG: userDescription || '',
+      DESCRIPTION: userDescription || '',
+      'PROBLEM_BESCHREIBUNG': userDescription || '',
+      'TEST_BESCHREIBUNG': userDescription || '',
+      'FEATURE_BESCHREIBUNG': userDescription || ''
+    };
+    
+    // Template-Variablen ersetzen (nur einmal!)
     let summary = template.summary;
     let description = template.description;
     
-    Object.keys(replacements).forEach(key => {
-      const placeholder = `[${key.toUpperCase()}]`;
-      const value = replacements[key] || '';
-      summary = summary.replace(new RegExp(placeholder, 'g'), value);
-      description = description.replace(new RegExp(placeholder, 'g'), value);
+    // Alle Replacements in einem Durchgang
+    Object.keys(standardReplacements).forEach(key => {
+      const placeholderBrackets = `[${key.toUpperCase()}]`;
+      const placeholderPlain = key.toUpperCase();
+      const value = standardReplacements[key] || '';
+      
+      // Nur ersetzen wenn der Wert nicht leer ist, um Endlosschleifen zu vermeiden
+      if (value && value.trim()) {
+        // Mit eckigen Klammern
+        summary = summary.replace(new RegExp(`\\[${key.toUpperCase()}\\]`, 'g'), value);
+        description = description.replace(new RegExp(`\\[${key.toUpperCase()}\\]`, 'g'), value);
+      }
     });
     
     // Nicht ersetzte Platzhalter entfernen
-    summary = summary.replace(/\[[\w\s]+\]/g, '');
-    description = description.replace(/\[[\w\s]+\]/g, '');
+    summary = summary.replace(/\[[\w\s_-]+\]/g, '');
+    description = description.replace(/\[[\w\s_-]+\]/g, '');
+    
+    // Fallback: Wenn Summary leer oder nur Template-Name ist, verwende den Titel direkt
+    if (!summary.trim() || summary.trim() === template.name || summary.includes('undefined')) {
+      summary = title || 'Neues Ticket';
+    }
     
     // Summary auf maximal 250 Zeichen begrenzen
     if (summary.length > 250) {
@@ -597,7 +879,7 @@ app.post('/create-from-template', async (req, res) => {
     };
     
     // Ticket über bestehende API erstellen
-    const response = await axios.post('http://localhost:3000/jira/create-ticket', ticketData);
+    const response = await axios.post(`http://localhost:${PORT}/jira/create-ticket`, ticketData);
     
     res.json({
       ...response.data,
@@ -657,7 +939,7 @@ app.post('/create-smart-ticket', async (req, res) => {
       labels: [...(template.labels || []), 'auto-created']
     };
     
-    const response = await axios.post('http://localhost:3000/jira/create-ticket', ticketData);
+    const response = await axios.post(`http://localhost:${PORT}/jira/create-ticket`, ticketData);
     
     res.json({
       ...response.data,
@@ -718,7 +1000,9 @@ app.post('/jira/create-ticket', async (req, res) => {
       issueType = 'Task',   // Issue-Typ (Task, Bug, Story, etc.)
       priority = 'Medium',  // Priorität
       assignee = null,      // Zuweisen an User (optional)
-      labels = []           // Labels (Array)
+      labels = [],          // Labels (Array)
+      parentKey = null,     // Parent-Key für Sub-Tasks (erforderlich für Sub-Tasks)
+      epicName = null       // Epic Name für Epic Tickets (erforderlich für Epics)
     } = req.body;
 
     // Validierung
@@ -738,6 +1022,21 @@ app.post('/jira/create-ticket', async (req, res) => {
         priority: { name: priority }
       }
     };
+
+    // Für Sub-Tasks: Parent-Key hinzufügen
+    if (issueType === 'Sub-task' && parentKey) {
+      issuePayload.fields.parent = { key: parentKey };
+    } else if (issueType === 'Sub-task' && !parentKey) {
+      return res.status(400).json({ 
+        error: 'Sub-Tasks benötigen einen Parent-Key (parentKey Parameter)' 
+      });
+    }
+
+    // Für Epics: Epic Name hinzufügen (customfield_10104)
+    if (issueType === 'Epic') {
+      const epicNameValue = epicName || summary; // Verwende epicName oder fallback auf summary
+      issuePayload.fields.customfield_10104 = epicNameValue;
+    }
 
     // Optional: Assignee hinzufügen
     if (assignee) {
@@ -784,6 +1083,149 @@ app.post('/jira/create-ticket', async (req, res) => {
   }
 });
 
+// Alle Tickets im PET Projekt auflisten
+app.get('/list-all-tickets', async (req, res) => {
+  try {
+    console.log('📋 Liste alle Tickets im PET Projekt...');
+    
+    const searchResponse = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/search?jql=project=PET&maxResults=100`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const tickets = searchResponse.data.issues;
+    console.log(`📊 Gefunden: ${tickets.length} Tickets`);
+    
+    const ticketList = tickets.map(ticket => ({
+      key: ticket.key,
+      summary: ticket.fields.summary,
+      issueType: ticket.fields.issuetype.name,
+      status: ticket.fields.status.name,
+      priority: ticket.fields.priority ? ticket.fields.priority.name : 'None',
+      assignee: ticket.fields.assignee ? ticket.fields.assignee.displayName : 'Unassigned',
+      created: ticket.fields.created,
+      description: ticket.fields.description ? ticket.fields.description.substring(0, 200) + '...' : 'No description',
+      url: `${JIRA_BASE_URL}/browse/${ticket.key}`
+    }));
+    
+    res.json({
+      success: true,
+      total: tickets.length,
+      tickets: ticketList
+    });
+    
+  } catch (error) {
+    console.error('❌ Fehler beim Auflisten der Tickets:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Lösche alle Tickets im PET Projekt
+app.delete('/delete-all-tickets', async (req, res) => {
+  try {
+    console.log('🗑️ Lösche alle Tickets im PET Projekt...');
+    
+    // Hole alle Tickets
+    const searchResponse = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/search?jql=project=PET`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const tickets = searchResponse.data.issues;
+    console.log(`📊 Gefunden: ${tickets.length} Tickets`);
+    
+    if (tickets.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'Keine Tickets zum Löschen gefunden',
+        deleted: 0
+      });
+    }
+    
+    // Lösche alle Tickets
+    const deletePromises = tickets.map(async (ticket) => {
+      try {
+        await axios.delete(
+          `${JIRA_BASE_URL}/rest/api/2/issue/${ticket.key}`,
+          {
+            headers: {
+              'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        console.log(`✅ Ticket ${ticket.key} gelöscht`);
+        return ticket.key;
+      } catch (error) {
+        console.log(`❌ Fehler beim Löschen von ${ticket.key}: ${error.message}`);
+        return null;
+      }
+    });
+    
+    const deletedTickets = await Promise.all(deletePromises);
+    const successfulDeletions = deletedTickets.filter(key => key !== null);
+    
+    res.json({
+      success: true,
+      message: `${successfulDeletions.length} von ${tickets.length} Tickets erfolgreich gelöscht`,
+      deleted: successfulDeletions.length,
+      total: tickets.length,
+      deletedTickets: successfulDeletions
+    });
+    
+  } catch (error) {
+    console.error('❌ Fehler beim Löschen der Tickets:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Lösche spezifisches Ticket
+app.delete('/delete-ticket/:key', async (req, res) => {
+  try {
+    const ticketKey = req.params.key;
+    console.log(`🗑️ Lösche Ticket: ${ticketKey}`);
+    
+    await axios.delete(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`✅ Ticket ${ticketKey} erfolgreich gelöscht`);
+    res.json({
+      success: true,
+      message: `Ticket ${ticketKey} erfolgreich gelöscht`
+    });
+    
+  } catch (error) {
+    console.error(`❌ Fehler beim Löschen von Ticket ${req.params.key}:`, error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Einfache Ticket-Erstellung für das LLM (vereinfacht)
 app.post('/create-ticket', async (req, res) => {
   try {
@@ -793,7 +1235,7 @@ app.post('/create-ticket', async (req, res) => {
       return res.status(400).json({ error: 'Titel ist erforderlich' });
     }
 
-    const result = await axios.post('http://localhost:3000/jira/create-ticket', {
+    const result = await axios.post(`http://localhost:${PORT}/jira/create-ticket`, {
       summary: title,
       description: description || '',
       issueType: type,
@@ -809,8 +1251,19 @@ app.post('/create-ticket', async (req, res) => {
   }
 });
 
+// Error handling
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 // Server starten
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 MCP Jira Server läuft auf http://localhost:${PORT}`);
   console.log(`📋 Jira-Integration: ${JIRA_BASE_URL}`);
   console.log(`🔧 Endpoints:`);
@@ -822,7 +1275,13 @@ app.listen(PORT, () => {
   console.log(`   GET  /jira/projects - Alle Jira-Projekte`);
   console.log(`   POST /jira/create-ticket - Neues Ticket erstellen`);
   console.log(`   POST /create-ticket - Vereinfachte Ticket-Erstellung`);
+  console.log(`   DELETE /delete-all-tickets - Alle Tickets löschen`);
+  console.log(`   DELETE /delete-ticket/:key - Spezifisches Ticket löschen`);
   console.log(`\n📝 Verfügbare Templates: ${Object.keys(TICKET_TEMPLATES).join(', ')}`);
+});
+
+server.on('error', (error) => {
+  console.error('❌ Server Error:', error);
 });
 
 module.exports = app;

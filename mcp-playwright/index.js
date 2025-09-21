@@ -17,8 +17,8 @@ const CrossPlatformTestGenerator = require('./cross-platform-generator');
 const TestAnalytics = require('./test-analytics');
 
 const app = express();
-const PORT = process.env.PLAYWRIGHT_PORT || 3001;
-const WS_PORT = process.env.WEBSOCKET_PORT || 3002;
+const PORT = process.env.PLAYWRIGHT_PORT || 3003;
+const WS_PORT = process.env.WEBSOCKET_PORT || 3004;
 const JIRA_MCP_URL = process.env.JIRA_MCP_URL || 'http://localhost:3000';
 
 // Initialize new modules
@@ -1645,4 +1645,25 @@ process.on('SIGTERM', () => {
   });
   
   process.exit(0);
+});
+
+// Server starten
+app.listen(PORT, () => {
+  console.log(`🎭 MCP Playwright Server läuft auf Port ${PORT}`);
+  console.log(`📡 WebSocket Server läuft auf Port ${WS_PORT}`);
+  console.log(`🔗 Jira MCP Integration: ${JIRA_MCP_URL}`);
+  console.log(`📊 Health Check: http://localhost:${PORT}/health`);
+});
+
+// WebSocket Connection Handling
+wss.on('connection', (ws) => {
+  console.log('📡 WebSocket Client verbunden');
+  
+  ws.on('close', () => {
+    console.log('📡 WebSocket Client getrennt');
+  });
+  
+  ws.on('error', (error) => {
+    console.error('📡 WebSocket Fehler:', error);
+  });
 });
