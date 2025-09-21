@@ -83,7 +83,8 @@ class CrashControllerIntegrationTests {
 		assertThat(resp.getBody()).isNotNull();
 		// html:
 		assertThat(resp.getBody()).contains("<h2");
-		assertThat(resp.getBody()).contains("Something happened...");
+		// Test supports both English and German I18n
+		assertThat(resp.getBody()).containsAnyOf("Something happened...", "Etwas ist passiert...");
 		assertThat(resp.getBody())
 			.contains("Expected: controller used to showcase what happens when an exception is thrown");
 		// Not the whitelabel error page:
