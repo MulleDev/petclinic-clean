@@ -30,16 +30,16 @@
           <li th:fragment="menuItem (link,active,title,glyph,i18nKey,dataPw)" th:class="nav-item" th:attr="data-pw=${dataPw}">
             <a th:class="${active==menu ? 'nav-link active' : 'nav-link'}" th:href="@{__${link}__}" th:title="${title}">
               <span th:class="'fa fa-'+${glyph}" class="fa fa-home"></span>
-              <span th:attr="data-i18n=${i18nKey}"></span>
+              <span th:text="#{__${i18nKey}__}" th:attr="data-i18n=${i18nKey}"></span>
             </a>
           </li>
 
         </ul>
 
         <ul class="nav navbar-nav me-auto">
-          <li th:replace="~{::menuItem ('/','home','home page','home','home','nav-home')}"></li>
-          <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search','findOwners','nav-find-owners')}"></li>
-          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list','vets','nav-vets')}"></li>
+          <li th:replace="~{::menuItem ('/','home','Home','home','home','nav-home')}"></li>
+          <li th:replace="~{::menuItem ('/owners/find','owners','Find Owners','search','findOwners','nav-find-owners')}"></li>
+          <li th:replace="~{::menuItem ('/vets.html','vets','Veterinarians','th-list','vets','nav-vets')}"></li>
           <!-- Verwaltung Dropdown -->
           <li class="nav-item dropdown" th:classappend="${active == 'verwaltung' ? 'active' : ''}">
             <a class="nav-link dropdown-toggle" href="#" id="verwaltungDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" th:title="#{verwaltung}" data-i18n="verwaltung">
@@ -50,7 +50,7 @@
               <li><a class="dropdown-item" th:href="@{/verwaltung/vets}" th:text="#{verwaltung.vets}" data-i18n="verwaltung.vets"></a></li>
             </ul>
           </li>
-          <li th:replace="~{::menuItem ('/oups','error','trigger a RuntimeException to see how it is handled','exclamation-triangle','error','nav-error')}"></li>
+          <li th:replace="~{::menuItem ('/oups','error','Error','exclamation-triangle','error','nav-error')}"></li>
         </ul>
       </div>
     </div>
@@ -115,7 +115,7 @@
       const resp = await fetch('/api/i18n/available');
       const langs = await resp.json();
       const langLabels = {
-        'default': 'Standard', 'de': 'Deutsch', 'en': 'English', 'es': 'Español', 'fa': 'فارسی', 'ko': '한국어', 'pt': 'Português', 'ru': 'Русский', 'tr': 'Türkçe'
+        'de': 'Deutsch', 'en': 'English', 'es': 'Español', 'ru': 'Русский'
       };
       langs.forEach(l => {
         const opt = document.createElement('option');
@@ -124,8 +124,8 @@
         opt.setAttribute('data-pw', 'language-option-' + l);
         select.appendChild(opt);
       });
-      // Setze gespeicherte Sprache
-      const saved = localStorage.getItem('lang') || 'default';
+      // Setze gespeicherte Sprache oder Deutsch als Standard
+      const saved = localStorage.getItem('lang') || 'de';
       select.value = saved;
     }
     document.addEventListener('DOMContentLoaded', () => {
@@ -133,10 +133,22 @@
         const select = document.getElementById('language-switcher');
         // Initiale Übersetzung
         updateI18nTexts(select.value);
-        select.addEventListener('change', e => {
+        select.addEventListener('change', async e => {
           const lang = e.target.value;
           localStorage.setItem('lang', lang);
+          
+          // Setze Server-Session-Locale
+          try {
+            await fetch('/api/i18n/setLocale/' + lang, { method: 'POST' });
+          } catch (err) {
+            console.error('Failed to set server locale:', err);
+          }
+          
+          // Aktualisiere Client-Übersetzungen
           updateI18nTexts(lang);
+          
+          // Lade Seite neu um Server-Übersetzungen zu aktualisieren
+          setTimeout(() => window.location.reload(), 100);
         });
       });
     });

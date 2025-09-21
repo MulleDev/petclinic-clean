@@ -35,7 +35,10 @@ app.use(cors());
 app.use(express.json());
 
 // WebSocket Server für Real-time Updates
-const wss = new WebSocket.Server({ port: WS_PORT });
+const wss = new WebSocket.Server({ 
+  port: WS_PORT,
+  host: '127.0.0.1'
+});
 
 // In-Memory Storage für Test-Läufe
 const activeRuns = new Map();
@@ -674,22 +677,26 @@ app.post('/playwright/enhance-pom', async (req, res) => {
 
 // Test-Generierung für bestehende Features
 app.post('/playwright/generate-test-for-feature', async (req, res) => {
-  const { feature, story, acceptanceCriteria, existingPoms } = req.body;
+  const { feature, story, acceptanceCriteria, existingPoms, pageObjects, description } = req.body;
+  
+  // Fallback für verschiedene Parameter Namen
+  const poms = existingPoms || pageObjects || [];
+  const criteria = acceptanceCriteria || [description] || [];
   
   try {
     const generatedTest = await generateTestFromFeature({
       feature,
       story,
-      acceptanceCriteria,
-      existingPoms
+      acceptanceCriteria: criteria,
+      existingPoms: poms
     });
     
     res.json({
       success: true,
       feature,
       generatedTest,
-      testFile: `${feature}.spec.ts`,
-      requiredPoms: existingPoms
+      testFile: `${feature.replace(/\s+/g, '-').toLowerCase()}.spec.ts`,
+      requiredPoms: poms
     });
     
   } catch (error) {
@@ -952,18 +959,22 @@ function analyzeSelectorQuality(pomContent) {
 }
 
 async function generateTestFromFeature({ feature, story, acceptanceCriteria, existingPoms }) {
+  // Sicherheitsprüfungen
+  const poms = existingPoms || [];
+  const criteria = acceptanceCriteria || [];
+  
   const testTemplate = `import { test, expect } from '@playwright/test';
-${existingPoms.map(pom => `import { ${pom} } from '../pages/${pom}';`).join('\n')}
+${poms.map(pom => `import { ${pom} } from '../pages/${pom}';`).join('\n')}
 
 test.describe('${feature.charAt(0).toUpperCase() + feature.slice(1)} Management', () => {
-  ${existingPoms.map(pom => `let ${pom.toLowerCase()}: ${pom};`).join('\n  ')}
+  ${poms.map(pom => `let ${pom.toLowerCase()}: ${pom};`).join('\n  ')}
 
   test.beforeEach(async ({ page }) => {
-    ${existingPoms.map(pom => `${pom.toLowerCase()} = new ${pom}(page);`).join('\n    ')}
+    ${poms.map(pom => `${pom.toLowerCase()} = new ${pom}(page);`).join('\n    ')}
     await page.goto('/');
   });
 
-  ${acceptanceCriteria.map((criteria, index) => `
+  ${criteria.map((criteria, index) => `
   test('${criteria}', async ({ page }) => {
     // TODO: Implementiere Test für: ${criteria}
     // User Story: ${story}
@@ -1648,7 +1659,7 @@ process.on('SIGTERM', () => {
 });
 
 // Server starten
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`🎭 MCP Playwright Server läuft auf Port ${PORT}`);
   console.log(`📡 WebSocket Server läuft auf Port ${WS_PORT}`);
   console.log(`🔗 Jira MCP Integration: ${JIRA_MCP_URL}`);

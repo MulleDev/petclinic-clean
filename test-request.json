@@ -1,0 +1,5 @@
+{
+  "feature": "Owner Management",
+  "description": "Test for adding new owner",
+  "pageObjects": ["FindOwnersPage", "OwnerPage"]
+}
