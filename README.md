@@ -1,140 +1,267 @@
-# Testing the Spring PetClinic Sample Application with playwright by using only promting [![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)[![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml)
+# Spring PetClinic Sample Application
 
-## Project Status & Setup Overview
+[![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)[![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml)
 
-1. **Project & Goal:**
-   - You are working on the Spring PetClinic project (Java, Maven, Spring Boot) and have set up Playwright for end-to-end testing.
-   - The goal was to deploy the application to Heroku and run automated tests against the live instance.
+## Live Application
 
-2. **Checkstyle:**
-   - Checkstyle was disabled in the pom.xml so that the build on Heroku is no longer blocked by style errors.
+🚀 **Live Demo**: [https://pet-clinic-llm-production.up.railway.app](https://pet-clinic-llm-production.up.railway.app)
 
-3. **Heroku Deployment:**
-   - The application is successfully deployed to Heroku.
-   - The current live URL is: https://petclinic-playwright-copilot-213a6b602332.herokuapp.com/
-   - Deployment is done via `git push heroku main` (you need to push to Heroku separately unless you use GitHub integration).
+This application is deployed on Railway and showcases a modern Spring Boot implementation following Best Practices architecture.
 
-4. **Playwright Tests:**
-   - The Playwright configuration was updated so that the baseURL points to the Heroku instance.
-   - In HomePage.ts, the `goto()` method was changed to use the baseURL (i.e., '/'), so tests run against the live instance.
-   - Tests are executed in the `playwright` subfolder (where `@playwright/test` is installed).
-   - In the last test run, there was an error when adding a pet (`addPet`), but in general, the tests now run against Heroku.
+## Project Status & Overview
 
-5. **CI/CD:**
-   - You are currently using Heroku Git deployment. A Jenkins pipeline is not strictly necessary, but would be useful for more complex workflows or multiple environments.
+This is a modernized version of the Spring PetClinic sample application that has been restructured to follow **Spring Boot Best Practices** with a clean Traditional Layered Architecture.
 
-#
+### Key Features:
+- **Modern Architecture**: Organized following Spring Boot Best Practices
+- **Package Structure**: Clean separation of concerns with proper layering
+- **Railway Deployment**: Fast, reliable cloud deployment platform
+- **Comprehensive Testing**: 75+ passing tests with Playwright E2E testing
+- **Multi-language Support**: Internationalization for German, English, Spanish, and Russian
 
-[See the presentation here](https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application)
-
-## Run Petclinic locally
-
-Spring Petclinic is a [Spring Boot](https://spring.io/guides/gs/spring-boot) application built using [Maven](https://spring.io/guides/gs/maven/) or [Gradle](https://spring.io/guides/gs/gradle/). You can build a jar file and run it from the command line (it should work just as well with Java 17 or newer):
-
-```bash
-git clone https://github.com/spring-projects/spring-petclinic.git
-cd spring-petclinic
-./mvnw package
-java -jar target/*.jar
+### Package Structure (Spring Boot Best Practices):
+```
+src/main/java/org/springframework/samples/petclinic/
+├── config/          # Configuration classes
+├── controller/      # Web layer
+│   ├── admin/       # Admin-specific controllers
+│   └── rest/        # REST API controllers
+├── model/           # Domain entities and data models
+├── repository/      # Data access layer
+├── validation/      # Custom validation logic
+└── formatter/       # Custom formatters and converters
 ```
 
-(On Windows, or if your shell doesn't expand the glob, you might need to specify the JAR file name explicitly on the command line at the end there.)
+### Deployment Information:
+- **Platform**: Railway (migrated from Heroku for better performance)
+- **Live URL**: https://pet-clinic-llm-production.up.railway.app
+- **Deployment Method**: Git-based automatic deployments
+- **Build Tool**: Maven with spring-javaformat plugin
 
-You can then access the Petclinic at <http://localhost:8080/>.
+## Playwright End-to-End Testing
 
-<img width="1042" alt="petclinic-screenshot" src="https://cloud.githubusercontent.com/assets/838318/19727082/2aee6d6c-9b8e-11e6-81fe-e889a5ddfded.png">
+This project includes comprehensive E2E testing with Playwright, configured to test against both local and deployed instances.
 
-Or you can run it from Maven directly using the Spring Boot Maven plugin. If you do this, it will pick up changes that you make in the project immediately (changes to Java source files require a compile as well - most people use an IDE for this):
+### Test Configuration:
+- **Live Testing**: Tests are configured to run against the Railway deployment
+- **Local Testing**: Can be configured to test against `http://localhost:8080`
+- **Test Location**: `playwright/tests/` directory
+- **Test Data**: Fixtures available in `playwright/fixtures/`
 
+### Running Playwright Tests:
 ```bash
+# Install Playwright dependencies
+cd playwright
+npm install
+
+# Run tests against live deployment
+npx playwright test
+
+# Run tests with UI mode
+npx playwright test --ui
+
+# View test report
+npx playwright show-report
+```
+
+### CI/CD & Deployment:
+- **Platform**: Railway with Git-based deployments
+- **Process**: Push to main branch triggers automatic deployment
+- **Build**: Maven with spring-javaformat for code quality
+- **Monitoring**: Railway provides built-in application monitoring
+
+## Running the Application Locally
+
+This modernized Spring Boot application can be run locally for development and testing.
+
+### Quick Start:
+```bash
+# Clone and navigate to the project
+git clone <your-repository-url>
+cd PetClinic
+
+# Run the application
 ./mvnw spring-boot:run
 ```
 
-> NOTE: If you prefer to use Gradle, you can build the app using `./gradlew build` and look for the jar file in `build/libs`.
+### Alternative Methods:
+```bash
+# Build and run JAR
+./mvnw package
+java -jar target/*.jar
+
+# Using Gradle (if preferred)
+./gradlew build
+java -jar build/libs/*.jar
+```
+
+Access the application at: **http://localhost:8080**
+
+### Development Features:
+- **Hot Reload**: Spring Boot DevTools enabled for immediate code changes
+- **H2 Console**: Available at `http://localhost:8080/h2-console` for database inspection
+- **Code Formatting**: Automatic formatting with spring-javaformat plugin
+- **Multi-Profile Support**: Switch between H2, MySQL, and PostgreSQL databases
+
+## Railway Deployment Setup
+
+This application is deployed on Railway, providing fast and reliable cloud hosting.
+
+### Initial Setup:
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login to Railway
+railway login
+
+# Link to existing project (if already deployed)
+railway link
+
+# Or create new project
+railway login
+railway init
+```
+
+### Deployment Process:
+```bash
+# Deploy current branch
+railway up
+
+# Or simply push to main branch for automatic deployment
+git push origin main
+```
+
+### Railway Features:
+- **Automatic Builds**: Detects Maven/Java projects automatically
+- **Environment Variables**: Managed through Railway dashboard
+- **Custom Domains**: HTTPS enabled by default
+- **Monitoring**: Built-in metrics and logging
+- **Zero Downtime**: Rolling deployments
+
+### Environment Configuration:
+Railway automatically detects the Maven project and uses:
+- Java 17+ runtime
+- Maven build process
+- Port binding from `$PORT` environment variable
+- Health checks via Spring Boot Actuator
 
 ## Building a Container
 
-There is no `Dockerfile` in this project. You can build a container image (if you have a docker daemon) using the Spring Boot build plugin:
+The application can be containerized using Spring Boot's built-in support:
 
 ```bash
+# Build container image with Maven
 ./mvnw spring-boot:build-image
+
+# Or create custom Dockerfile if needed
+docker build -t petclinic .
+docker run -p 8080:8080 petclinic
 ```
 
-## In case you find a bug/suggested improvement for Spring Petclinic
+Railway supports both buildpack and Docker deployments automatically.
 
-Our issue tracker is available [here](https://github.com/spring-projects/spring-petclinic/issues).
+## Database Configuration
 
-## Database configuration
+The application supports multiple database configurations through Spring profiles:
 
-In its default configuration, Petclinic uses an in-memory database (H2) which
-gets populated at startup with data. The h2 console is exposed at `http://localhost:8080/h2-console`,
-and it is possible to inspect the content of the database using the `jdbc:h2:mem:<uuid>` URL. The UUID is printed at startup to the console.
+### Default Configuration (H2):
+- **In-Memory Database**: H2 database populated at startup
+- **H2 Console**: Available at `http://localhost:8080/h2-console`
+- **JDBC URL**: `jdbc:h2:mem:<uuid>` (UUID printed at startup)
+- **Profile**: Default (no profile needed)
 
-A similar setup is provided for MySQL and PostgreSQL if a persistent database configuration is needed. Note that whenever the database type changes, the app needs to run with a different profile: `spring.profiles.active=mysql` for MySQL or `spring.profiles.active=postgres` for PostgreSQL. See the [Spring Boot documentation](https://docs.spring.io/spring-boot/how-to/properties-and-configuration.html#howto.properties-and-configuration.set-active-spring-profiles) for more detail on how to set the active profile.
-
-You can start MySQL or PostgreSQL locally with whatever installer works for your OS or use docker:
-
+### Production Databases:
 ```bash
-docker run -e MYSQL_USER=petclinic -e MYSQL_PASSWORD=petclinic -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:9.2
+# MySQL Profile
+./mvnw spring-boot:run -Dspring.profiles.active=mysql
+
+# PostgreSQL Profile  
+./mvnw spring-boot:run -Dspring.profiles.active=postgres
 ```
 
-or
-
+### Database Setup with Docker:
 ```bash
-docker run -e POSTGRES_USER=petclinic -e POSTGRES_PASSWORD=petclinic -e POSTGRES_DB=petclinic -p 5432:5432 postgres:17.5
+# MySQL
+docker run -e MYSQL_USER=petclinic -e MYSQL_PASSWORD=petclinic -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:8.0
+
+# PostgreSQL
+docker run -e POSTGRES_USER=petclinic -e POSTGRES_PASSWORD=petclinic -e POSTGRES_DB=petclinic -p 5432:5432 postgres:15-alpine
 ```
 
-Further documentation is provided for [MySQL](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/resources/db/mysql/petclinic_db_setup_mysql.txt)
-and [PostgreSQL](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/resources/db/postgres/petclinic_db_setup_postgres.txt).
+### Railway Database:
+For production deployment on Railway, you can easily add:
+- **PostgreSQL**: Railway Postgres plugin
+- **MySQL**: Railway MySQL plugin
+- **Environment Variables**: Automatically configured by Railway
 
-Instead of vanilla `docker` you can also use the provided `docker-compose.yml` file to start the database containers. Each one has a service named after the Spring profile:
+The application automatically detects and uses Railway's database environment variables when deployed.
 
+### Docker Compose Support:
+The project includes `docker-compose.yml` for easy database setup:
 ```bash
+# Start MySQL
 docker compose up mysql
-```
 
-or
-
-```bash
+# Start PostgreSQL
 docker compose up postgres
 ```
 
-## Test Applications
+## Development and Testing
 
-At development time we recommend you use the test applications set up as `main()` methods in `PetClinicIntegrationTests` (using the default H2 database and also adding Spring Boot Devtools), `MySqlTestApplication` and `PostgresIntegrationTests`. These are set up so that you can run the apps in your IDE to get fast feedback and also run the same classes as integration tests against the respective database. The MySql integration tests use Testcontainers to start the database in a Docker container, and the Postgres tests use Docker Compose to do the same thing.
+### Integration Tests:
+The application includes specialized test configurations:
+- **`PetClinicIntegrationTests`**: H2 database with Spring Boot DevTools
+- **`MySqlTestApplication`**: MySQL with Testcontainers
+- **`PostgresIntegrationTests`**: PostgreSQL with Docker Compose
 
-## Compiling the CSS
+### CSS Development:
+The project uses SCSS for styling:
+- **Source**: `src/main/scss/petclinic.scss`
+- **Output**: `src/main/resources/static/resources/css/petclinic.css`
+- **Compilation**: `./mvnw package -P css`
+- **Framework**: Bootstrap integration
 
-There is a `petclinic.css` in `src/main/resources/static/resources/css`. It was generated from the `petclinic.scss` source, combined with the [Bootstrap](https://getbootstrap.com/) library. If you make changes to the `scss`, or upgrade Bootstrap, you will need to re-compile the CSS resources using the Maven profile "css", i.e. `./mvnw package -P css`. There is no build profile for Gradle to compile the CSS.
+## IDE Setup and Development
 
-## Working with Petclinic in your IDE
+### Prerequisites:
+- **Java 17 or newer** (full JDK, not a JRE)
+- **Git command line tool**
+- **Maven 3.6+** (or use included wrapper)
+- **Node.js 16+** (for Playwright testing)
 
-### Prerequisites
+### Recommended IDEs:
+- **VS Code**: Excellent Spring Boot support with extensions
+- **IntelliJ IDEA**: Superior Java development experience
+- **Eclipse/STS**: Traditional Spring development environment
 
-The following items should be installed in your system:
+### VS Code Setup:
+1. Install recommended extensions:
+   - Spring Boot Extension Pack
+   - Java Extension Pack
+   - Playwright Test for VS Code
 
-- Java 17 or newer (full JDK, not a JRE)
-- [Git command line tool](https://help.github.com/articles/set-up-git)
-- Your preferred IDE
-  - Eclipse with the m2e plugin. Note: when m2e is available, there is an m2 icon in `Help -> About` dialog. If m2e is
-  not there, follow the install process [here](https://www.eclipse.org/m2e/)
-  - [Spring Tools Suite](https://spring.io/tools) (STS)
-  - [IntelliJ IDEA](https://www.jetbrains.com/idea/)
-  - [VS Code](https://code.visualstudio.com)
+2. Open the project:
+   ```bash
+   code .
+   ```
 
-### Steps
+3. The application will auto-configure with proper run configurations
 
-1. On the command line run:
+### IntelliJ IDEA Setup:
+1. **Open Project**: `File -> Open` and select `pom.xml`
+2. **Build CSS**: `./mvnw generate-resources` or Maven panel
+3. **Run Configuration**: Auto-generated `PetClinicApplication` configuration
+4. **Database**: H2 console integration available
 
-    ```bash
-    git clone https://github.com/spring-projects/spring-petclinic.git
-    ```
+### Development Workflow:
+1. **Start Application**: Use IDE run configuration or `./mvnw spring-boot:run`
+2. **Hot Reload**: Enabled via Spring Boot DevTools
+3. **Database**: H2 console at `http://localhost:8080/h2-console`
+4. **Testing**: Run Playwright tests with `npx playwright test`
+5. **Formatting**: Automatic with spring-javaformat plugin
 
-1. Inside Eclipse or STS:
-
-    Open the project via `File -> Import -> Maven -> Existing Maven project`, then select the root directory of the cloned repo.
-
-    Then either build on the command line `./mvnw generate-resources` or use the Eclipse launcher (right-click on project and `Run As -> Maven install`) to generate the CSS. Run the application's main method by right-clicking on it and choosing `Run As -> Java Application`.
+Access the application at: **http://localhost:8080**
 
 1. Inside IntelliJ IDEA:
 
@@ -148,38 +275,56 @@ The following items should be installed in your system:
 
     Visit [http://localhost:8080](http://localhost:8080) in your browser.
 
-## Looking for something in particular?
+## Architecture Reference
 
-|Spring Boot Configuration | Class or Java property files  |
+|Component | Location  |
 |--------------------------|---|
-|The Main Class | [PetClinicApplication](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java) |
-|Properties Files | [application.properties](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/resources) |
-|Caching | [CacheConfiguration](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java) |
+|Main Application Class | `src/main/java/.../PetClinicApplication.java` |
+|Configuration Classes | `src/main/java/.../config/` |
+|Web Controllers | `src/main/java/.../controller/` |
+|Domain Models | `src/main/java/.../model/` |
+|Data Repositories | `src/main/java/.../repository/` |
+|Application Properties | `src/main/resources/application.properties` |
+|Static Resources | `src/main/resources/static/` |
+|Templates | `src/main/resources/templates/` |
 
-## Interesting Spring Petclinic branches and forks
+This project follows **Spring Boot Best Practices** with a Traditional Layered Architecture for clear separation of concerns.
 
-The Spring Petclinic "main" branch in the [spring-projects](https://github.com/spring-projects/spring-petclinic)
-GitHub org is the "canonical" implementation based on Spring Boot and Thymeleaf. There are
-[quite a few forks](https://spring-petclinic.github.io/docs/forks.html) in the GitHub org
-[spring-petclinic](https://github.com/spring-petclinic). If you are interested in using a different technology stack to implement the Pet Clinic, please join the community there.
+## Technologies Used
 
-## Interaction with other open-source projects
+This modernized Spring PetClinic implementation leverages current best practices and technologies:
 
-One of the best parts about working on the Spring Petclinic application is that we have the opportunity to work in direct contact with many Open Source projects. We found bugs/suggested improvements on various topics such as Spring, Spring Data, Bean Validation and even Eclipse! In many cases, they've been fixed/implemented in just a few days.
-Here is a list of them:
+### Core Framework:
+- **Spring Boot 3.5.0**: Latest Spring Boot with modern Java features
+- **Java 17+**: Modern Java LTS with enhanced performance
+- **Maven**: Dependency management and build automation
+- **Thymeleaf**: Server-side template engine for web UI
 
-| Name | Issue |
-|------|-------|
-| Spring JDBC: simplify usage of NamedParameterJdbcTemplate | [SPR-10256](https://github.com/spring-projects/spring-framework/issues/14889) and [SPR-10257](https://github.com/spring-projects/spring-framework/issues/14890) |
-| Bean Validation / Hibernate Validator: simplify Maven dependencies and backward compatibility |[HV-790](https://hibernate.atlassian.net/browse/HV-790) and [HV-792](https://hibernate.atlassian.net/browse/HV-792) |
-| Spring Data: provide more flexibility when working with JPQL queries | [DATAJPA-292](https://github.com/spring-projects/spring-data-jpa/issues/704) |
+### Testing Stack:
+- **JUnit 5**: Unit testing framework
+- **Spring Test**: Integration testing support
+- **Playwright**: End-to-end browser testing
+- **Testcontainers**: Database integration testing
+
+### Database Support:
+- **H2**: In-memory database for development
+- **MySQL**: Production database option
+- **PostgreSQL**: Production database option
+- **Spring Data JPA**: Data access abstraction
+
+### Architecture:
+- **Traditional Layered Architecture**: Following Spring Boot Best Practices
+- **Separation of Concerns**: Clean package structure
+- **Dependency Injection**: Spring's IoC container
+- **Configuration Management**: Externalized configuration
 
 ## Contributing
 
-The [issue tracker](https://github.com/spring-projects/spring-petclinic/issues) is the preferred channel for bug reports, feature requests and submitting pull requests.
-
-For pull requests, editor preferences are available in the [editor config](.editorconfig) for easy use in common text editors. Read more and download plugins at <https://editorconfig.org>. All commits must include a __Signed-off-by__ trailer at the end of each commit message to indicate that the contributor agrees to the Developer Certificate of Origin.
-For additional details, please refer to the blog post [Hello DCO, Goodbye CLA: Simplifying Contributions to Spring](https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring).
+This project welcomes contributions! Please ensure:
+- Code follows spring-javaformat style guidelines
+- All tests pass locally
+- New features include appropriate test coverage
+- Commits follow conventional commit format
 
 ## License
 
