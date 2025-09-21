@@ -1,0 +1,18 @@
+[
+  {
+    "namePrefix": "Test-Dog",
+    "description": "A loyal and friendly companion animal"
+  },
+  {
+    "namePrefix": "Test-Cat",
+    "description": ""
+  },
+  {
+    "namePrefix": "Test-MediumDesc",
+    "description": "A friendly domestic animal that makes a great companion for families and individuals alike."
+  },
+  {
+    "namePrefix": "Test-Special",
+    "description": "Tiere mit Umlauten: äöü ßÄÖÜ @#$%&*()"
+  }
+]

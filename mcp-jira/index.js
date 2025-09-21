@@ -1526,9 +1526,364 @@ const server = app.listen(PORT, () => {
   console.log(`   POST /create-ticket - Vereinfachte Ticket-Erstellung`);
   console.log(`   POST /jira/add-comment - Kommentar zu Ticket hinzufügen`);
   console.log(`   GET  /jira/comments/:key - Kommentare eines Tickets abrufen`);
+  console.log(`   PUT  /jira/update-ticket/:key - Ticket komplett aktualisieren`);
+  console.log(`   PATCH /jira/update-ticket/:key - Ticket partiell aktualisieren`);
+  console.log(`   POST /jira/transition/:key - Status-Transition durchführen`);
+  console.log(`   GET  /jira/transitions/:key - Verfügbare Transitions abrufen`);
   console.log(`   DELETE /delete-all-tickets - Alle Tickets löschen`);
   console.log(`   DELETE /delete-ticket/:key - Spezifisches Ticket löschen`);
   console.log(`\n📝 Verfügbare Templates: ${Object.keys(TICKET_TEMPLATES).join(', ')}`);
+});
+
+// =============================================
+// 🔄 JIRA TICKET UPDATE FUNCTIONALITY
+// =============================================
+
+// Ticket aktualisieren (PUT - komplettes Update)
+app.put('/jira/update-ticket/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+    const { 
+      summary, 
+      description, 
+      priority, 
+      assignee, 
+      labels,
+      status,
+      comment 
+    } = req.body;
+
+    console.log(`🔄 Aktualisiere Ticket: ${ticketKey}`);
+
+    // Jira Update Payload erstellen
+    const updatePayload = {
+      fields: {}
+    };
+
+    // Nur Felder aktualisieren, die übermittelt wurden
+    if (summary) updatePayload.fields.summary = summary;
+    if (description) updatePayload.fields.description = description;
+    if (priority) updatePayload.fields.priority = { name: priority };
+    if (assignee) updatePayload.fields.assignee = { name: assignee };
+    if (labels) updatePayload.fields.labels = labels;
+
+    // Status-Update über Transition (falls angegeben)
+    let transitionId = null;
+    if (status) {
+      // Verfügbare Transitions abrufen
+      const transitionsResponse = await axios.get(
+        `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/transitions`,
+        {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const availableTransitions = transitionsResponse.data.transitions;
+      const targetTransition = availableTransitions.find(t => 
+        t.to.name.toLowerCase() === status.toLowerCase()
+      );
+
+      if (targetTransition) {
+        transitionId = targetTransition.id;
+      } else {
+        console.warn(`⚠️ Status "${status}" nicht als Transition verfügbar für ${ticketKey}`);
+      }
+    }
+
+    // Ticket-Update durchführen
+    const response = await axios.put(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}`,
+      updatePayload,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Status-Transition durchführen (falls nötig)
+    if (transitionId) {
+      await axios.post(
+        `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/transitions`,
+        {
+          transition: { id: transitionId }
+        },
+        {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log(`✅ Status von ${ticketKey} auf "${status}" geändert`);
+    }
+
+    // Optionaler Kommentar hinzufügen
+    if (comment) {
+      const timestamp = new Date().toLocaleString('de-DE');
+      const commentBody = `*Update-Kommentar:*\n\n${comment}\n\n_Erstellt: ${timestamp}_`;
+      
+      await axios.post(
+        `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/comment`,
+        { body: commentBody },
+        {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+            'Content-Type': 'application/json; charset=utf-8'
+          }
+        }
+      );
+    }
+
+    console.log(`✅ Ticket ${ticketKey} erfolgreich aktualisiert`);
+
+    res.json({
+      success: true,
+      message: `Ticket ${ticketKey} erfolgreich aktualisiert`,
+      ticketKey: ticketKey,
+      updatedFields: Object.keys(updatePayload.fields),
+      statusChanged: !!transitionId,
+      newStatus: status,
+      jiraUrl: `${JIRA_BASE_URL}/browse/${ticketKey}`
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler beim Aktualisieren von ${req.params.ticketKey}:`, error.message);
+    
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        error: `Ticket ${req.params.ticketKey} nicht gefunden`
+      });
+    }
+
+    if (error.response?.status === 400) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültige Update-Daten',
+        details: error.response?.data
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'Unbekannter Fehler'
+    });
+  }
+});
+
+// Partial Update (PATCH - nur spezifische Felder)
+app.patch('/jira/update-ticket/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+    const updates = req.body;
+
+    console.log(`🔄 Partial Update für Ticket: ${ticketKey}`);
+
+    // Dynamisches Update-Payload basierend auf übermittelten Feldern
+    const updatePayload = { fields: {} };
+
+    // Mapping von Request-Feldern zu Jira-Feldern
+    const fieldMapping = {
+      'summary': 'summary',
+      'description': 'description',
+      'priority': (value) => ({ name: value }),
+      'assignee': (value) => ({ name: value }),
+      'labels': 'labels'
+    };
+
+    Object.keys(updates).forEach(key => {
+      if (fieldMapping[key]) {
+        const mapping = fieldMapping[key];
+        updatePayload.fields[key] = typeof mapping === 'function' 
+          ? mapping(updates[key]) 
+          : updates[key];
+      }
+    });
+
+    if (Object.keys(updatePayload.fields).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Keine gültigen Update-Felder übermittelt',
+        supportedFields: Object.keys(fieldMapping)
+      });
+    }
+
+    // Update durchführen
+    await axios.put(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}`,
+      updatePayload,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log(`✅ Partial Update für ${ticketKey} erfolgreich`);
+
+    res.json({
+      success: true,
+      message: `Ticket ${ticketKey} partiell aktualisiert`,
+      ticketKey: ticketKey,
+      updatedFields: Object.keys(updatePayload.fields),
+      jiraUrl: `${JIRA_BASE_URL}/browse/${ticketKey}`
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler beim partiellen Update von ${req.params.ticketKey}:`, error.message);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'Unbekannter Fehler'
+    });
+  }
+});
+
+// Status-Transition (spezifischer Endpoint)
+app.post('/jira/transition/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+    const { status, comment } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        error: 'Status ist erforderlich für Transition'
+      });
+    }
+
+    console.log(`🔄 Ändere Status von ${ticketKey} auf "${status}"`);
+
+    // Verfügbare Transitions abrufen
+    const transitionsResponse = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/transitions`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const availableTransitions = transitionsResponse.data.transitions;
+    const targetTransition = availableTransitions.find(t => 
+      t.to.name.toLowerCase() === status.toLowerCase()
+    );
+
+    if (!targetTransition) {
+      return res.status(400).json({
+        success: false,
+        error: `Status "${status}" ist nicht als Transition verfügbar`,
+        availableTransitions: availableTransitions.map(t => ({
+          id: t.id,
+          name: t.name,
+          to: t.to.name
+        }))
+      });
+    }
+
+    // Transition-Payload
+    const transitionPayload = {
+      transition: { id: targetTransition.id }
+    };
+
+    // Optional: Kommentar bei Transition hinzufügen
+    if (comment) {
+      const timestamp = new Date().toLocaleString('de-DE');
+      transitionPayload.update = {
+        comment: [{
+          add: {
+            body: `*Status-Änderung zu "${status}":*\n\n${comment}\n\n_Erstellt: ${timestamp}_`
+          }
+        }]
+      };
+    }
+
+    // Transition durchführen
+    await axios.post(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/transitions`,
+      transitionPayload,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log(`✅ Status von ${ticketKey} erfolgreich auf "${status}" geändert`);
+
+    res.json({
+      success: true,
+      message: `Status von ${ticketKey} erfolgreich auf "${status}" geändert`,
+      ticketKey: ticketKey,
+      oldStatus: 'Unknown', // TODO: Könnte aus vorherigem GET geholt werden
+      newStatus: status,
+      transitionId: targetTransition.id,
+      jiraUrl: `${JIRA_BASE_URL}/browse/${ticketKey}`
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler bei Status-Transition von ${req.params.ticketKey}:`, error.message);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'Unbekannter Fehler'
+    });
+  }
+});
+
+// Verfügbare Transitions für ein Ticket abrufen
+app.get('/jira/transitions/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+
+    console.log(`🔍 Lade verfügbare Transitions für ${ticketKey}`);
+
+    const response = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/transitions`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const transitions = response.data.transitions.map(transition => ({
+      id: transition.id,
+      name: transition.name,
+      to: {
+        id: transition.to.id,
+        name: transition.to.name,
+        description: transition.to.description
+      }
+    }));
+
+    res.json({
+      success: true,
+      ticketKey: ticketKey,
+      transitions: transitions,
+      count: transitions.length
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler beim Laden der Transitions für ${req.params.ticketKey}:`, error.message);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 server.on('error', (error) => {

@@ -18,6 +18,10 @@ const TestAnalytics = require('./test-analytics');
 
 const app = express();
 const PORT = process.env.PLAYWRIGHT_PORT || 3003;
+
+// Playwright Report Server Management
+let playwrightReportProcess = null;
+const PLAYWRIGHT_REPORT_PORT = 9323;
 const WS_PORT = process.env.WEBSOCKET_PORT || 3004;
 const JIRA_MCP_URL = process.env.JIRA_MCP_URL || 'http://localhost:3000';
 
@@ -182,9 +186,9 @@ function formatDuration(ms) {
 
 // Test Execution Functions
 async function runPlaywrightTests(options) {
-  const { suite, browser, headless = true, parallel = true, runId } = options;
+  const { suite, browser, headless = true, parallel = true, runId, tests } = options;
   
-  const playwrightPath = path.join(__dirname, '..', 'playwright');
+  const playwrightPath = path.join(__dirname, '..');
   const configPath = path.join(playwrightPath, 'playwright.config.ts');
   
   let command = 'npx';
@@ -200,19 +204,21 @@ async function runPlaywrightTests(options) {
     args.push('--headed');
   }
   
-  // Suite-spezifische Tests
-  if (suite && suite !== 'all') {
-    // Erkenne verschiedene Suite-Patterns
+  // Spezifische Tests ausführen (neues Format)
+  if (tests && tests.length > 0) {
+    args.push(...tests);
+  } else if (suite && suite !== 'all') {
+    // Suite-spezifische Tests (altes Format)
     if (suite === 'pet-types') {
-      args.push('tests/**/pet-type*.spec.ts');
+      args.push('playwright/tests/**/pet-type*.spec.ts');
     } else if (suite === 'owners') {
-      args.push('tests/**/owner*.spec.ts');
+      args.push('playwright/tests/**/owner*.spec.ts');
     } else if (suite === 'pets') {
-      args.push('tests/**/pet*.spec.ts');
+      args.push('playwright/tests/**/pet*.spec.ts');
     } else if (suite === 'visits') {
-      args.push('tests/**/visit*.spec.ts');
+      args.push('playwright/tests/**/visit*.spec.ts');
     } else {
-      args.push(`tests/**/*${suite}*.spec.ts`);
+      args.push(`playwright/tests/**/*${suite}*.spec.ts`);
     }
   }
   
@@ -223,6 +229,11 @@ async function runPlaywrightTests(options) {
   
   // JSON Reporter für maschinelle Auswertung
   args.push('--reporter', 'json');
+  
+  console.log('🚀 DEBUG: Executing command:', command);
+  console.log('🚀 DEBUG: With args:', JSON.stringify(args, null, 2));
+  console.log('🚀 DEBUG: In directory:', playwrightPath);
+  console.log('🚀 DEBUG: Config file exists:', fs.existsSync(configPath));
   
   logTestEvent(runId, 'test-execution-started', { command, args, options });
   
@@ -246,6 +257,14 @@ async function runPlaywrightTests(options) {
     
     testProcess.on('close', (code) => {
       const endTime = new Date();
+      
+      console.log('🏁 DEBUG: Process finished with code:', code);
+      console.log('📝 DEBUG: stdout length:', output.length);
+      console.log('❌ DEBUG: stderr length:', errorOutput.length);
+      if (errorOutput) {
+        console.log('❌ DEBUG: stderr content:', errorOutput);
+      }
+      console.log('📄 DEBUG: First 500 chars of output:', output.substring(0, 500));
       
       try {
         const results = parseTestResults(output, runId, options);
@@ -297,18 +316,35 @@ async function runPlaywrightTests(options) {
   });
 }
 
-function parseTestResults(jsonOutput, runId, options) {
+function parseTestResults(rawOutput, runId, options) {
+  let jsonOutput = rawOutput;
+  
   try {
-    // Versuche JSON-Output zu parsen
+    // Extrahiere nur gültiges JSON aus der Ausgabe
+    console.log('🔍 DEBUG: Raw output length:', rawOutput.length);
+    
+    // Entferne alles vor dem ersten JSON-Objekt
+    const jsonStart = rawOutput.indexOf('{');
+    const jsonEnd = rawOutput.lastIndexOf('}');
+    
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      jsonOutput = rawOutput.substring(jsonStart, jsonEnd + 1);
+      console.log('🔍 DEBUG: Extracted JSON length:', jsonOutput.length);
+    }
+    
+    // Versuche JSON-Output direkt zu parsen (ohne Filterung)
     const results = JSON.parse(jsonOutput);
+    console.log('✅ DEBUG: JSON parsed successfully');
     
     const summary = {
-      total: results.stats?.total || 0,
-      passed: results.stats?.passed || 0,
-      failed: results.stats?.failed || 0,
+      total: results.stats?.expected || results.stats?.total || 0,
+      passed: results.stats?.expected || results.stats?.passed || 0,
+      failed: results.stats?.unexpected || results.stats?.failed || 0,
       skipped: results.stats?.skipped || 0,
       duration: results.stats?.duration || 0
     };
+    
+    console.log('📊 DEBUG: Parsed summary:', summary);
     
     const testResults = [];
     
@@ -342,9 +378,9 @@ function parseTestResults(jsonOutput, runId, options) {
     console.warn('Konnte JSON-Output nicht parsen, verwende Fallback:', error.message);
     
     // Fallback: Einfache Text-Analyse
-    const lines = jsonOutput.split('\n');
-    const passedMatch = jsonOutput.match(/(\d+) passed/);
-    const failedMatch = jsonOutput.match(/(\d+) failed/);
+    const lines = rawOutput.split('\n');
+    const passedMatch = rawOutput.match(/(\d+) passed/);
+    const failedMatch = rawOutput.match(/(\d+) failed/);
     
     return {
       summary: {
@@ -355,7 +391,7 @@ function parseTestResults(jsonOutput, runId, options) {
         duration: 0
       },
       tests: [],
-      raw: { fallback: true, output: jsonOutput }
+      raw: { fallback: true, output: rawOutput }
     };
   }
 }
@@ -392,17 +428,38 @@ async function processTestResults(results, runId) {
     await createSuiteReport(suiteResult);
   }
   
-  // Speichere in History
-  testHistory.set(runId, {
+  // Speichere in History mit Details
+  const historyEntry = {
+    runId,
     timestamp: new Date(),
-    results,
-    options: activeRuns.get(runId)?.options
-  });
+    startTime: activeRuns.get(runId)?.startTime || new Date(),
+    endTime: new Date(),
+    status: summary.failed > 0 ? 'failed' : 'completed',
+    summary,
+    tests,
+    options: activeRuns.get(runId)?.options || {},
+    duration: summary.duration
+  };
+  
+  testHistory.set(runId, historyEntry);
+  
+  console.log('📝 DEBUG: Saved to history:', runId, 'Status:', historyEntry.status);
   
   // Update Active Run Status
   if (activeRuns.has(runId)) {
-    activeRuns.get(runId).status = 'completed';
-    activeRuns.get(runId).results = results;
+    const activeRun = activeRuns.get(runId);
+    activeRun.status = historyEntry.status;
+    activeRun.results = results;
+    activeRun.summary = summary;
+    console.log('✅ DEBUG: Updated active run status to:', activeRun.status);
+    
+    // Remove completed runs from active runs after a short delay
+    setTimeout(() => {
+      if (activeRuns.has(runId)) {
+        activeRuns.delete(runId);
+        console.log(`🧹 DEBUG: Removed completed run ${runId} from active runs. Remaining: ${activeRuns.size}`);
+      }
+    }, 2000); // 2 second delay to allow status checks
   }
 }
 
@@ -431,6 +488,81 @@ function findSlowestTest(tests) {
 
 // REST API Endpoints
 
+// Cleanup old active runs (runs older than 10 minutes are considered stuck)
+function cleanupActiveRuns() {
+  const now = new Date();
+  const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+  
+  let cleanedCount = 0;
+  activeRuns.forEach((run, runId) => {
+    if (run.startTime < tenMinutesAgo) {
+      console.log(`🧹 Cleaning up stuck run: ${runId} (started: ${run.startTime})`);
+      activeRuns.delete(runId);
+      cleanedCount++;
+    }
+  });
+  
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned up ${cleanedCount} stuck runs. Active runs remaining: ${activeRuns.size}`);
+  }
+}
+
+// Playwright Report Server Management
+async function checkPlaywrightReportServer() {
+  try {
+    const response = await axios.get(`http://localhost:${PLAYWRIGHT_REPORT_PORT}`, { timeout: 3000 });
+    return response.status === 200;
+  } catch (error) {
+    return false;
+  }
+}
+
+function startPlaywrightReportServer() {
+  if (playwrightReportProcess) {
+    console.log('📊 Playwright Report Server is already running');
+    return;
+  }
+
+  console.log('🚀 Starting Playwright Report Server...');
+  
+  playwrightReportProcess = spawn('npx', ['playwright', 'show-report', '--port', PLAYWRIGHT_REPORT_PORT.toString()], {
+    cwd: process.cwd(),
+    stdio: ['pipe', 'pipe', 'pipe'],
+    shell: true
+  });
+
+  playwrightReportProcess.stdout.on('data', (data) => {
+    console.log(`📊 Report Server: ${data.toString().trim()}`);
+  });
+
+  playwrightReportProcess.stderr.on('data', (data) => {
+    console.error(`📊 Report Server Error: ${data.toString().trim()}`);
+  });
+
+  playwrightReportProcess.on('close', (code) => {
+    console.log(`📊 Playwright Report Server exited with code ${code}`);
+    playwrightReportProcess = null;
+  });
+
+  playwrightReportProcess.on('error', (error) => {
+    console.error(`📊 Failed to start Playwright Report Server: ${error.message}`);
+    playwrightReportProcess = null;
+  });
+}
+
+async function ensurePlaywrightReportServer() {
+  const isRunning = await checkPlaywrightReportServer();
+  if (!isRunning) {
+    console.log('📊 Playwright Report Server not running, starting it...');
+    startPlaywrightReportServer();
+    // Wait a bit for the server to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+}
+
+// Run cleanup every 5 minutes
+setInterval(cleanupActiveRuns, 5 * 60 * 1000);
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({
@@ -443,22 +575,294 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Manual cleanup endpoint
+app.post('/cleanup-runs', (req, res) => {
+  const before = activeRuns.size;
+  cleanupActiveRuns();
+  const after = activeRuns.size;
+  
+  res.json({
+    success: true,
+    message: `Cleaned up ${before - after} runs`,
+    activeRunsBefore: before,
+    activeRunsAfter: after
+  });
+});
+
+// Ensure Playwright Report Server is running
+app.post('/ensure-report-server', async (req, res) => {
+  try {
+    await ensurePlaywrightReportServer();
+    res.json({
+      success: true,
+      message: 'Playwright Report Server is running',
+      port: PLAYWRIGHT_REPORT_PORT
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start Playwright Report Server',
+      error: error.message
+    });
+  }
+});
+
+// Dashboard endpoint
+app.get('/dashboard', (req, res) => {
+  // Kombiniere aktive Runs und Historie
+  const allRuns = [];
+  
+  // Aktive Runs hinzufügen
+  activeRuns.forEach((run, runId) => {
+    allRuns.push({
+      runId,
+      startTime: run.startTime,
+      status: run.status || 'running',
+      summary: run.summary || { total: 0, passed: 0, failed: 0, skipped: 0 },
+      duration: run.results?.summary?.duration || 0,
+      options: run.options || {},
+      tests: run.results?.tests || []
+    });
+  });
+  
+  // Historie hinzufügen
+  testHistory.forEach((entry, runId) => {
+    if (!allRuns.find(r => r.runId === runId)) {
+      allRuns.push({
+        runId,
+        startTime: entry.startTime || entry.timestamp,
+        status: entry.status,
+        summary: entry.summary || { total: 0, passed: 0, failed: 0, skipped: 0 },
+        duration: entry.duration || 0,
+        options: entry.options || {},
+        tests: entry.tests || []
+      });
+    }
+  });
+  
+  // Sortiere nach Startzeit (neueste zuerst)
+  const recentRuns = allRuns
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+    .slice(0, 10);
+  
+  const totalCompleted = recentRuns.filter(r => r.status === 'completed').length;
+  const totalFailed = recentRuns.filter(r => r.status === 'failed').length;
+  const totalRunning = recentRuns.filter(r => r.status === 'running').length;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Playwright Test Dashboard</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat { text-align: center; padding: 20px; border-radius: 8px; }
+        .stat.success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .stat.warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+        .stat.error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .stat.info { background: #d1ecf1; border: 1px solid #bee5eb; }
+        .stat h3 { margin: 0; font-size: 2em; }
+        .stat p { margin: 5px 0 0 0; color: #666; }
+        .run-list { margin-top: 20px; }
+        .run-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .run-item:last-child { border-bottom: none; }
+        .run-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .run-details { flex-grow: 1; }
+        .run-summary { display: flex; gap: 10px; align-items: center; margin: 5px 0; }
+        .test-count { padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; }
+        .test-count.passed { background: #d4edda; color: #155724; }
+        .test-count.failed { background: #f8d7da; color: #721c24; }
+        .test-count.total { background: #e9ecef; color: #495057; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .status.completed { background: #d4edda; color: #155724; }
+        .status.running { background: #fff3cd; color: #856404; }
+        .status.failed { background: #f8d7da; color: #721c24; }
+        .test-details { margin-top: 10px; }
+        .test-item { display: flex; justify-content: between; align-items: center; padding: 8px; margin: 3px 0; border-radius: 4px; font-size: 0.9em; }
+        .test-item.passed { background: #f8f9fa; border-left: 4px solid #28a745; }
+        .test-item.failed { background: #fff5f5; border-left: 4px solid #dc3545; }
+        .test-item.skipped { background: #fffacd; border-left: 4px solid #ffc107; }
+        .test-name { flex-grow: 1; font-weight: 500; }
+        .test-duration { color: #666; font-size: 0.8em; margin-left: 10px; }
+        .test-file { color: #999; font-size: 0.8em; }
+        .toggle-details { background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+        .toggle-details:hover { background: #0056b3; }
+        .actions { margin-top: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        .btn:hover { background: #0056b3; }
+        .btn.success { background: #28a745; }
+        .btn.success:hover { background: #1e7e34; }
+        .duration { color: #666; font-size: 0.9em; }
+        .refresh-indicator { float: right; color: #666; font-size: 0.9em; }
+        .expandable { display: none; }
+        .expandable.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Playwright Test Dashboard <span class="refresh-indicator">Auto-refresh: 10s</span></h1>
+        
+        <div class="card">
+            <h2>📊 Statistics</h2>
+            <div class="stats">
+                <div class="stat warning">
+                    <h3>${totalRunning}</h3>
+                    <p>Running</p>
+                </div>
+                <div class="stat success">
+                    <h3>${totalCompleted}</h3>
+                    <p>Completed</p>
+                </div>
+                <div class="stat error">
+                    <h3>${totalFailed}</h3>
+                    <p>Failed</p>
+                </div>
+                <div class="stat info">
+                    <h3>${flakyTests.size}</h3>
+                    <p>Flaky Tests</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🏃 Recent Test Runs</h2>
+            <div class="run-list">
+                ${recentRuns.length === 0 ? '<p>No test runs yet. Start your first test!</p>' : ''}
+                ${recentRuns.map(run => `
+                    <div class="run-item">
+                        <div class="run-header">
+                            <div class="run-details">
+                                <strong>Run ID:</strong> ${run.runId.substring(0, 8)}...<br>
+                                <small>Started: ${new Date(run.startTime).toLocaleString('de-DE')}</small>
+                                ${run.duration > 0 ? `<span class="duration"> • Duration: ${Math.round(run.duration/1000)}s</span>` : ''}
+                                <div class="run-summary">
+                                    <span class="test-count total">Total: ${run.summary.total}</span>
+                                    <span class="test-count passed">✅ ${run.summary.passed}</span>
+                                    ${run.summary.failed > 0 ? `<span class="test-count failed">❌ ${run.summary.failed}</span>` : ''}
+                                    ${run.summary.skipped > 0 ? `<span class="test-count">⏭️ ${run.summary.skipped}</span>` : ''}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                ${run.tests.length > 0 ? `<button class="toggle-details" onclick="toggleDetails('${run.runId}')">Show Tests</button>` : ''}
+                                <span class="status ${run.status}">${run.status.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        ${run.tests.length > 0 ? `
+                            <div class="test-details expandable" id="details-${run.runId}">
+                                <h4>📋 Individual Test Results:</h4>
+                                ${run.tests.map(test => `
+                                    <div class="test-item ${test.status}">
+                                        <div class="test-name">
+                                            ${test.testName}
+                                            <div class="test-file">${test.testFile}</div>
+                                        </div>
+                                        <div class="test-duration">
+                                            ${test.duration ? Math.round(test.duration/1000) + 's' : 'N/A'}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Quick Actions</h2>
+            <div class="actions">
+                <button class="btn" onclick="runTests()">Run PetType Tests</button>
+                <button class="btn success" onclick="openPlaywrightReport()">Open Playwright Report</button>
+                <button class="btn" onclick="refreshDashboard()">Refresh Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails(runId) {
+            const details = document.getElementById('details-' + runId);
+            const button = event.target;
+            if (details.classList.contains('show')) {
+                details.classList.remove('show');
+                button.textContent = 'Show Tests';
+            } else {
+                details.classList.add('show');
+                button.textContent = 'Hide Tests';
+            }
+        }
+
+        function runTests() {
+            fetch('/playwright/run-tests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tests: ['playwright/tests/e2e/pettype-description.spec.ts'],
+                    options: { workers: 1, headed: true, project: 'chromium' }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Tests started! Run ID: ' + data.runId.substring(0, 8) + '...');
+                setTimeout(refreshDashboard, 2000);
+            })
+            .catch(error => alert('Error: ' + error));
+        }
+
+        function openPlaywrightReport() {
+            console.log('Opening Playwright Report...');
+            // Direkt öffnen, da der Server jetzt läuft
+            window.open('http://localhost:9323', '_blank');
+        }
+
+        function refreshDashboard() {
+            window.location.reload();
+        }
+
+        // Auto-refresh every 10 seconds
+        setInterval(refreshDashboard, 10000);
+    </script>
+</body>
+</html>`;
+
+  res.send(html);
+});
+
 // Test-Ausführung
 app.post('/playwright/run-tests', async (req, res) => {
-  const { suite, browser, headless, parallel } = req.body;
+  const { suite, browser, headless, parallel, tests, options } = req.body;
   const runId = generateRunId();
   
   try {
     logTestEvent(runId, 'test-run-requested', req.body);
     
-    // Starte Tests asynchron
-    runPlaywrightTests({
+    // Konvertiere neues Format zu altem Format falls nötig
+    let testOptions = {
+      runId,
       suite,
       browser,
       headless: headless !== false,
-      parallel: parallel !== false,
-      runId
-    });
+      parallel: parallel !== false
+    };
+    
+    // Wenn das neue Format verwendet wird
+    if (tests || options) {
+      testOptions = {
+        runId,
+        tests: tests || [],
+        browser: options?.project || browser || 'chromium',
+        headless: options?.headed !== true && headless !== false,
+        parallel: options?.workers !== 1 && parallel !== false
+      };
+    }
+    
+    console.log('🔍 DEBUG: Final testOptions:', JSON.stringify(testOptions, null, 2));
+    
+    // Starte Tests asynchron
+    runPlaywrightTests(testOptions);
     
     res.json({
       success: true,
@@ -1659,11 +2063,17 @@ process.on('SIGTERM', () => {
 });
 
 // Server starten
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, '127.0.0.1', async () => {
   console.log(`🎭 MCP Playwright Server läuft auf Port ${PORT}`);
   console.log(`📡 WebSocket Server läuft auf Port ${WS_PORT}`);
   console.log(`🔗 Jira MCP Integration: ${JIRA_MCP_URL}`);
   console.log(`📊 Health Check: http://localhost:${PORT}/health`);
+  console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
+  
+  // Auto-start Playwright Report Server
+  console.log('🚀 Starting Playwright Report Server automatically...');
+  await ensurePlaywrightReportServer();
+  console.log(`📊 Playwright Report: http://localhost:${PLAYWRIGHT_REPORT_PORT}`);
 });
 
 // WebSocket Connection Handling
