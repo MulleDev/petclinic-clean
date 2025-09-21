@@ -1,0 +1,34 @@
+{
+  "name": "mcp-playwright-server",
+  "version": "1.0.0",
+  "description": "MCP Server für automatisierte Playwright-Test-Ausführung mit Jira-Integration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "ws": "^8.14.2",
+    "uuid": "^9.0.1",
+    "@playwright/test": "^1.40.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "jira",
+    "mcp",
+    "petclinic"
+  ],
+  "author": "Dennis",
+  "license": "MIT"
+}

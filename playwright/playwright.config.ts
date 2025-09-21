@@ -1,55 +1,123 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
+ * MCP Playwright Configuration
+ * Generiert durch MCP Playwright Server
+ * Optimiert für AI-powered Testing
  */
 export default defineConfig({
+  // Test-Verzeichnis
   testDir: './tests',
-  /* Run tests in files in parallel */
+  
+  // Globale Test-Konfiguration
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: 1,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : undefined,
+  
+  // Reporter für bessere Analyse
+  reporter: [
+    ['html', { outputFolder: 'playwright-report' }],
+    ['json', { outputFile: 'test-results/test-results.json' }],
+    ['junit', { outputFile: 'test-results/junit.xml' }]
+  ],
+  
+  // Output-Verzeichnisse
+  outputDir: 'test-results/',
+  
+  // Globale Test-Einstellungen
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'https://petclinic-playwright-copilot-213a6b602332.herokuapp.com/',
-    testIdAttribute: 'data-pw',
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    // Browser-Einstellungen
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
+    
+    // Screenshots und Videos
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     trace: 'on-first-retry',
-    headless: false,
+    
+    // MCP Server Integration
+    baseURL: 'http://localhost:8080',
+    
+    // Erweiterte Selektoren für AI
+    testIdAttribute: 'data-testid',
   },
 
-  /* Configure projects for major browsers */
+  // Cross-Platform Testing - Generiert durch MCP
   projects: [
+    // Desktop Browsers
     {
-      name: 'chromium',
+      name: 'chromium-desktop',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 }
+      },
+    },
+    {
+      name: 'firefox-desktop',
+      use: { 
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1920, height: 1080 }
+      },
+    },
+    {
+      name: 'webkit-desktop',
+      use: { 
+        ...devices['Desktop Safari'],
+        viewport: { width: 1920, height: 1080 }
+      },
+    },
+
+    // Tablet Testing
+    {
+      name: 'tablet-ipad',
+      use: { ...devices['iPad Pro'] },
+    },
+    {
+      name: 'tablet-android',
+      use: { ...devices['Galaxy Tab S4'] },
+    },
+
+    // Mobile Testing
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 12'] },
+    },
+
+    // API Testing
+    {
+      name: 'api-tests',
+      testMatch: '**/api/**/*.spec.ts',
       use: {
-        browserName: 'chromium',
-        launchOptions: {
-          slowMo: 500,
-        },
+        // API-spezifische Konfiguration
+        baseURL: 'http://localhost:8080/api',
+      },
+    },
+
+    // Visual Testing
+    {
+      name: 'visual-tests',
+      testMatch: '**/visual/**/*.spec.ts',
+      use: {
+        // Visual Testing Konfiguration
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
       },
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  // Test-Server für lokale Entwicklung
+  webServer: {
+    command: 'echo "PetClinic should be running on localhost:8080"',
+    port: 8080,
+    reuseExistingServer: !process.env.CI,
+  },
+
+  // Erweiterte Konfiguration für MCP Features
+  globalSetup: './config/global-setup.ts',
+  globalTeardown: './config/global-teardown.ts',
 });

@@ -1,7 +1,39 @@
+# Playwright Test Results
+test-results/
+playwright-report/
+playwright/.cache/
 
-# Playwright
+# Screenshots (keep baseline, ignore generated)
+**/test-results/screenshots/
+**/tests/**/*-actual.png
+**/tests/**/*-diff.png
+
+# Node Modules
 node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+npm-debug.log*
+
+# Environment Variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript Build
+dist/
+*.tsbuildinfo
+
+# Coverage Reports
+coverage/
+
+# Temporary Files
+*.tmp
+*.temp
+
+# Logs
+*.log

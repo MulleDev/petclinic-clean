@@ -19,3 +19,26 @@ services:
       - POSTGRES_PASSWORD=petclinic
       - POSTGRES_USER=petclinic
       - POSTGRES_DB=petclinic
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+  jira:
+    image: atlassian/jira-software:9.4.17
+    ports:
+      - "8081:8080"
+    environment:
+      - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/jiradb
+      - ATL_JDBC_USER=jira
+      - ATL_JDBC_PASSWORD=jira123
+      - ATL_DB_TYPE=postgres72
+      - JVM_MINIMUM_MEMORY=512m
+      - JVM_MAXIMUM_MEMORY=2048m
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - jira_data:/var/atlassian/application-data/jira
+
+volumes:
+  jira_data:
+  postgres_data:

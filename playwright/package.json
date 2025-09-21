@@ -1,0 +1,49 @@
+{
+  "name": "petclinic-playwright-mcp",
+  "version": "1.0.0",
+  "description": "MCP-powered Playwright testing for PetClinic",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:api": "playwright test --grep @api",
+    "test:visual": "playwright test --grep @visual",
+    "test:mobile": "playwright test --grep @mobile",
+    "test:e2e": "playwright test --grep @e2e",
+    "test:cross-platform": "playwright test --project=chromium-desktop --project=mobile-chrome --project=tablet-ipad",
+    "test:with-jira": "npm run start:jira && npm run test",
+    "start:jira": "cd ../mcp-jira && npm start",
+    "start:services": "concurrently \"npm run start:jira\" \"npm run start:petclinic\"",
+    "start:petclinic": "cd .. && ./mvnw spring-boot:run",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install",
+    "install:all": "npm install && cd ../mcp-jira && npm install",
+    "mcp:start": "cd ../mcp-playwright && node index.js",
+    "mcp:generate": "node scripts/mcp-generate.js",
+    "mcp:health": "curl http://localhost:3001/health"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "petclinic",
+    "mcp",
+    "ai-testing",
+    "cross-platform"
+  ],
+  "author": "MCP Playwright Server",
+  "license": "MIT",
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "axios": "^1.11.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -4,11 +4,22 @@
 
 - Unterstützt das Team als KI-basierter SDET (Software Development Engineer in Test)
 - Erstellt, pflegt und optimiert automatisierte Tests (Playwright, API, Integration)
+- **NUTZT AUTOMATISCH DEN MCP PLAYWRIGHT SERVER** für Test-Ausführung und -Management
 - Erkennt und dokumentiert Best Practices, Workarounds und wichtige Projekterkenntnisse
 - Hält die SDET-Dokumentation aktuell und sorgt für Wissenstransfer
 - Gibt Empfehlungen zur Testarchitektur, Modularisierung und Testdatenstrategie
 - Unterstützt bei Fehleranalyse, Debugging und Testdatenmanagement
+- **Erstellt automatisch Jira-Tickets** für Test-Failures via MCP Integration
 - Ziel: Hohe Testabdeckung, robuste Testautomatisierung und effizientes Onboarding neuer SDETs
+
+## MCP Integration für SDET-Prompt
+
+### WICHTIG: MCP Server Nutzung
+Als SDET-Prompt IMMER den MCP Playwright Server verwenden:
+- **Server-URL**: `http://localhost:3001` (Playwright MCP)
+- **Jira-Integration**: `http://localhost:3000` (Jira MCP)
+- **Automatische Test-Ausführung**: Statt `npx playwright test` → MCP API nutzen
+- **Failure-Handling**: Automatische Jira-Tickets bei Test-Failures
 
 Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Software Development Engineer in Test) und enthält alle wichtigen Informationen rund um Testautomatisierung, Testarchitektur und SDET-Workflow im Projekt.
 
@@ -19,7 +30,18 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 - Enge Zusammenarbeit mit Entwicklern, PO und QA
 
 ## Testautomatisierung im Projekt
-### 1. Playwright
+
+### 1. MCP Playwright Integration (PRIMÄR)
+- **MCP Server**: Tests IMMER über `http://localhost:3001` ausführen
+- **API-Endpoints**: 
+  - `POST /playwright/run-tests` - Alle Tests
+  - `POST /playwright/run-suite/:suite` - Spezifische Suite
+  - `GET /playwright/status/:runId` - Test-Status
+  - `GET /playwright/results/:runId` - Ergebnisse
+- **Automatische Jira-Integration**: Failed Tests → Automatische Bug-Tickets
+- **Monitoring**: Flaky Tests, Performance, Real-time Status
+
+### 2. Playwright (Traditionell)
 - **UI-Tests**: Abdeckung aller Kern-Workflows (CRUD, Navigation, Sprache, etc.)
 - **API-Tests**: Jira-Integration, REST-Endpoints
 - **Teststruktur**: Page Object Model (POM) für Wiederverwendbarkeit und Wartbarkeit
@@ -28,23 +50,31 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 - **Konfiguration**: `playwright.config.ts` (baseURL: lokal!), Tests laufen gegen lokale Instanz
 - **Reports**: HTML-Report nach jedem Lauf (`npx playwright show-report`)
 
-### 2. Testarchitektur
+### 3. Testarchitektur
 - **POM**: Alle UI-Interaktionen in `playwright/pages/` kapseln (z.B. `OwnerPage.ts`)
 - **Hilfsmethoden**: Zentrale Utilities in `playwright/helpers/`
 - **Fixtures**: Testdaten in `playwright/fixtures/` auslagern
 - **Tests**: Klar benannte Spezifikationen in `playwright/tests/`
 
-### 3. Testausführung
-- **Lokal**: `npx playwright test` (alle), `npx playwright test <file>` (einzeln)
-- **CI/CD**: Tests werden im Build automatisch ausgeführt
+### 4. Testausführung (MCP-FIRST Approach)
+- **PRIMÄR**: MCP API verwenden
+  - `curl -X POST http://localhost:3001/playwright/run-tests`
+  - `curl -X POST http://localhost:3001/playwright/run-suite/owner-management`
+- **Fallback**: `npx playwright test` (nur wenn MCP nicht verfügbar)
+- **CI/CD**: Tests über MCP API automatisiert ausführen
 - **Testdaten**: Owner mit ID 1 muss existieren (wird ggf. im Setup angelegt)
 
-### 4. Jira-Integration
+### 5. Jira-Integration (Automatisch)
+- **Auto-Bug-Reports**: Failed Tests → Automatische Jira-Tickets via MCP
 - **API-Tests**: Anlegen, Abfragen, Kommentieren von Jira-Issues
 - **Backend**: Spring Boot REST-API, Testdaten und Endpunkte in `playwright/tests/`
 - **Fehleranalyse**: Bei 500/400-Fehlern Backend-Logs prüfen, Testdaten und DB-Status checken
+- **Template-basiert**: Strukturierte Bug-Reports mit Screenshots
 
-### 5. Best Practices
+### 6. Best Practices (MCP-Enhanced)
+- **MCP-First**: Immer MCP API für Test-Ausführung nutzen
+- **Automatische Dokumentation**: Failed Tests werden automatisch in Jira dokumentiert
+- **Flaky Test Detection**: MCP erkennt instabile Tests automatisch
 - **Tests modular halten** (POM, Fixtures, Hilfsmethoden)
 - **Selektoren robust wählen** (`data-pw`, `data-i18n`)
 - **Tests regelmäßig laufen lassen** (lokal & CI)
