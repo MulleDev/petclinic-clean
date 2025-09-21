@@ -18,7 +18,6 @@ package org.springframework.samples.petclinic.model;
 import java.time.LocalDate;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.samples.petclinic.model.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
