@@ -22,7 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.samples.petclinic.model.BaseEntity;
 import org.springframework.samples.petclinic.model.Person;
-import org.springframework.samples.petclinic.vet.Vet;
+import org.springframework.samples.petclinic.model.Vet;
 
 public class PetClinicRuntimeHints implements RuntimeHintsRegistrar {
 

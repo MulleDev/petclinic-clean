@@ -34,7 +34,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.PropertySource;
-import org.springframework.samples.petclinic.vet.VetRepository;
+import org.springframework.samples.petclinic.repository.VetRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.DockerClientFactory;
 import org.springframework.lang.NonNull;
