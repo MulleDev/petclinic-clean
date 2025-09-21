@@ -16,8 +16,8 @@
 
 ### WICHTIG: MCP Server Nutzung
 Als SDET-Prompt IMMER den MCP Playwright Server verwenden:
-- **Server-URL**: `http://localhost:3001` (Playwright MCP)
-- **Jira-Integration**: `http://localhost:3000` (Jira MCP)
+- **Server-URL**: `http://localhost:3003` (Playwright MCP)
+- **Jira-Integration**: `http://localhost:3001` (Jira MCP)
 - **Automatische Test-Ausführung**: Statt `npx playwright test` → MCP API nutzen
 - **Failure-Handling**: Automatische Jira-Tickets bei Test-Failures
 
@@ -32,7 +32,7 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 ## Testautomatisierung im Projekt
 
 ### 1. MCP Playwright Integration (PRIMÄR)
-- **MCP Server**: Tests IMMER über `http://localhost:3001` ausführen
+- **MCP Server**: Tests IMMER über `http://localhost:3003` ausführen
 - **API-Endpoints**: 
   - `POST /playwright/run-tests` - Alle Tests
   - `POST /playwright/run-suite/:suite` - Spezifische Suite
@@ -58,8 +58,8 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 
 ### 4. Testausführung (MCP-FIRST Approach)
 - **PRIMÄR**: MCP API verwenden
-  - `curl -X POST http://localhost:3001/playwright/run-tests`
-  - `curl -X POST http://localhost:3001/playwright/run-suite/owner-management`
+  - `curl -X POST http://localhost:3003/playwright/run-tests`
+  - `curl -X POST http://localhost:3003/playwright/run-suite/owner-management`
 - **Fallback**: `npx playwright test` (nur wenn MCP nicht verfügbar)
 - **CI/CD**: Tests über MCP API automatisiert ausführen
 - **Testdaten**: Owner mit ID 1 muss existieren (wird ggf. im Setup angelegt)
@@ -84,9 +84,10 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 ## Einstieg für neue SDETs
 1. Projekt klonen und lokal aufsetzen (siehe README)
 2. Sicherstellen, dass das Backend auf `localhost:8080` läuft
-3. Playwright-Tests lokal ausführen
-4. Testdaten/Fixtures prüfen und ggf. anpassen
-5. Bei Fragen: Siehe diese Datei, POMs, oder frage das Team
+3. **MCP Server starten** (Playwright auf Port 3003, Jira auf Port 3001)
+4. Tests über MCP API ausführen (nicht direkt mit npx playwright)
+5. Testdaten/Fixtures prüfen und ggf. anpassen
+6. Bei Fragen: Siehe diese Datei, POMs, oder frage das Team
 
 ## Nützliche Dateien & Orte
 - `playwright/tests/` – Testfälle (UI, API, Sprache, Jira)

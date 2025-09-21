@@ -4,22 +4,24 @@
 ## 🚀 Server Setup (Daily Start)
 ```powershell
 # Terminal 1: MCP Jira Server
-cd mcp-jira; npm start                    # Port 3000
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-jira
+npm start                                  # Port 3001
 
 # Terminal 2: MCP Playwright Server  
-cd mcp-playwright; npm start              # Port 3001
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-playwright
+npm start                                  # Port 3003
 
 # Health Check
-curl http://localhost:3000/health         # Jira MCP
-curl http://localhost:3001/health         # Playwright MCP
+curl http://localhost:3001/health          # Jira MCP
+curl http://localhost:3003/health          # Playwright MCP
 ```
 
 ## 🐛 Bug Reports (Häufigste Nutzung)
 
 ### Standard Bug Ticket
-```bash
-curl -X POST http://localhost:3000/create-from-template \
-  -H "Content-Type: application/json" \
+```powershell
+curl -X POST http://localhost:3001/create-from-template `
+  -H "Content-Type: application/json" `
   -d '{
     "templateId": "petclinic-bug",
     "replacements": {
@@ -37,9 +39,9 @@ curl -X POST http://localhost:3000/create-from-template \
 ```
 
 ### Quick Bug (Minimal)
-```bash
-curl -X POST http://localhost:3000/create-smart-ticket \
-  -H "Content-Type: application/json" \
+```powershell
+curl -X POST http://localhost:3001/create-smart-ticket `
+  -H "Content-Type: application/json" `
   -d '{
     "title": "Bug: Test xyz fails on CI",
     "description": "Test failing consistently on CI environment",
@@ -50,21 +52,21 @@ curl -X POST http://localhost:3000/create-smart-ticket \
 ## 🎭 Test Execution
 
 ### Run All Tests
-```bash
-curl -X POST http://localhost:3001/playwright/run-tests
+```powershell
+curl -X POST http://localhost:3003/playwright/run-tests
 ```
 
 ### Run Specific Suite
-```bash
-curl -X POST http://localhost:3001/playwright/run-suite/owner-management
-curl -X POST http://localhost:3001/playwright/run-suite/vet-management
-curl -X POST http://localhost:3001/playwright/run-suite/pet-management
+```powershell
+curl -X POST http://localhost:3003/playwright/run-suite/owner-management
+curl -X POST http://localhost:3003/playwright/run-suite/vet-management
+curl -X POST http://localhost:3003/playwright/run-suite/pet-management
 ```
 
 ### Check Test Status
-```bash
-curl http://localhost:3001/playwright/status/run-ID
-curl http://localhost:3001/playwright/results/run-ID
+```powershell
+curl http://localhost:3003/playwright/status/run-ID
+curl http://localhost:3003/playwright/results/run-ID
 ```
 
 ## 📊 Monitoring & Analysis

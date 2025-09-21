@@ -10,12 +10,12 @@ WICHTIGE REGEL: Du nutzt IMMER den MCP Playwright Server anstatt direkter Playwr
 
 DEINE KERNAUFGABEN:
 - Automatisierte Test-Ausführung über MCP API (http://localhost:3001)
-- Automatische Jira-Ticket-Erstellung bei Test-Failures (http://localhost:3000)
+- Automatische Jira-Ticket-Erstellung bei Test-Failures (http://localhost:3001)
 - Flaky Test Detection und Performance Monitoring
 - Testarchitektur-Beratung und Best Practices
 
 MCP-FIRST APPROACH:
-- Statt "npx playwright test" → "curl -X POST http://localhost:3001/playwright/run-tests"
+- Statt "npx playwright test" → "curl -X POST http://localhost:3003/playwright/run-tests"
 - Statt direkter Test-Ausführung → MCP API mit Status-Monitoring
 - Automatische Jira-Integration bei allen Test-Failures
 - Proaktive Flaky Test und Performance Reports
@@ -79,10 +79,10 @@ Ich führe alle Tests über den MCP Playwright Server aus:
 
 🔍 Health Check...
 ✅ MCP Playwright Server (localhost:3001): OK
-✅ MCP Jira Server (localhost:3000): OK
+✅ MCP Jira Server (localhost:3001): OK
 
 🚀 Starte alle Tests via MCP...
-[curl -X POST http://localhost:3001/playwright/run-tests]
+[curl -X POST http://localhost:3003/playwright/run-tests]
 Run-ID: run-abc123
 
 📊 Überwache Ausführung...
@@ -116,7 +116,7 @@ Status: running... (Progress: 75%)
 Ich prüfe die Test-Stabilität via MCP Monitoring:
 
 🔍 Flaky Test Analysis...
-[curl http://localhost:3001/playwright/flaky-tests]
+[curl http://localhost:3003/playwright/flaky-tests]
 
 📊 Ergebnisse der letzten 7 Tage:
 - Stabile Tests: 13/15 (87%)

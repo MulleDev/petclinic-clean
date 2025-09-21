@@ -16,18 +16,18 @@ npx playwright test --grep "add owner"
 ```
 
 ### IMMER MCP API nutzen:
-```bash
+```powershell
 # Alle Tests
-curl -X POST http://localhost:3001/playwright/run-tests
+curl -X POST http://localhost:3003/playwright/run-tests
 
 # Spezifische Suite
-curl -X POST http://localhost:3001/playwright/run-suite/owner-management
+curl -X POST http://localhost:3003/playwright/run-suite/owner-management
 
 # Einzelner Test
-curl -X POST "http://localhost:3001/playwright/run-single/add new owner"
+curl -X POST "http://localhost:3003/playwright/run-single/add new owner"
 
 # Status prüfen
-curl http://localhost:3001/playwright/status/run-ID
+curl http://localhost:3003/playwright/status/run-ID
 ```
 
 ## 📋 SDET-Prompt Verhalten
@@ -41,27 +41,27 @@ curl http://localhost:3001/playwright/status/run-ID
 6. **AUTOMATISCH** Jira-Tickets für Failures erstellen
 
 ### Beispiel-Workflow:
-```bash
+```powershell
 # 1. Health Check
 curl http://localhost:3001/health
 
 # 2. Tests starten
-RESPONSE=$(curl -X POST http://localhost:3001/playwright/run-tests)
-RUN_ID=$(echo $RESPONSE | jq -r '.runId')
+$response = curl -X POST http://localhost:3003/playwright/run-tests
+$runId = ($response | ConvertFrom-Json).runId
 
 # 3. Status überwachen
-while true; do
-  STATUS=$(curl http://localhost:3001/playwright/status/$RUN_ID | jq -r '.status')
-  if [ "$STATUS" = "completed" ]; then break; fi
-  sleep 5
-done
+do {
+  $status = (curl http://localhost:3003/playwright/status/$runId | ConvertFrom-Json).status
+  if ($status -eq "completed") { break }
+  Start-Sleep 5
+} while ($true)
 
 # 4. Ergebnisse abrufen
-curl http://localhost:3001/playwright/results/$RUN_ID
+curl http://localhost:3003/playwright/results/$runId
 
 # 5. Bei Failures: Auto-Jira-Ticket
-curl -X POST http://localhost:3000/create-from-template \
-  -H "Content-Type: application/json" \
+curl -X POST http://localhost:3001/create-from-template `
+  -H "Content-Type: application/json" `
   -d '{"templateId": "playwright-test-failure", "replacements": {...}}'
 ```
 
@@ -88,10 +88,10 @@ curl -X POST http://localhost:3000/create-from-template \
 ### Bei Flaky Tests:
 ```bash
 # Flaky Tests identifizieren
-curl http://localhost:3001/playwright/flaky-tests
+curl http://localhost:3003/playwright/flaky-tests
 
 # Investigation-Ticket erstellen
-curl -X POST http://localhost:3000/create-from-template \
+curl -X POST http://localhost:3001/create-from-template \
   -H "Content-Type: application/json" \
   -d '{
     "templateId": "flaky-test-investigation",
@@ -110,19 +110,19 @@ curl -X POST http://localhost:3000/create-from-template \
 ```bash
 # Morning Health Check
 curl http://localhost:3001/health
-curl http://localhost:3000/health
+curl http://localhost:3001/health
 
 # Flaky Tests Report
-curl http://localhost:3001/playwright/flaky-tests
+curl http://localhost:3003/playwright/flaky-tests
 
 # Performance Check
-curl http://localhost:3001/playwright/performance-report
+curl http://localhost:3003/playwright/performance-report
 ```
 
 ### Bei Performance-Problemen:
 ```bash
 # Auto-Performance-Ticket
-curl -X POST http://localhost:3000/create-from-template \
+curl -X POST http://localhost:3001/create-from-template \
   -H "Content-Type: application/json" \
   -d '{
     "templateId": "performance-investigation",
@@ -173,21 +173,21 @@ Ich prüfe die Test-Stabilität via MCP:
 
 ```bash
 # Health Check All
-curl http://localhost:3001/health && curl http://localhost:3000/health
+curl http://localhost:3001/health && curl http://localhost:3001/health
 
 # Run All Tests with Monitoring
-curl -X POST http://localhost:3001/playwright/run-tests | tee /tmp/run.json && \
+curl -X POST http://localhost:3003/playwright/run-tests | tee /tmp/run.json && \
 RUN_ID=$(cat /tmp/run.json | jq -r '.runId') && \
-curl http://localhost:3001/playwright/status/$RUN_ID
+curl http://localhost:3003/playwright/status/$RUN_ID
 
 # Emergency: All Flaky Tests Report
-curl http://localhost:3001/playwright/flaky-tests && \
-curl -X POST http://localhost:3000/create-smart-ticket \
+curl http://localhost:3003/playwright/flaky-tests && \
+curl -X POST http://localhost:3001/create-smart-ticket \
   -H "Content-Type: application/json" \
   -d '{"title":"Daily Flaky Test Report","description":"Automated report","context":{"petclinic":true}}'
 
 # Performance Alert
-curl http://localhost:3001/playwright/slow-tests?threshold=10s
+curl http://localhost:3003/playwright/slow-tests?threshold=10s
 ```
 
 ## 🔄 Integration in SDET-Workflow

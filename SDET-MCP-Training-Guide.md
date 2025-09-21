@@ -5,8 +5,8 @@
 
 Als SDET haben Sie Zugang zu zwei leistungsstarken MCP (Model Context Protocol) Servern, die Ihre Testautomatisierung erheblich verbessern:
 
-1. **MCP Jira Server** (`localhost:3000`) - Automatische Jira-Ticket-Erstellung
-2. **MCP Playwright Server** (`localhost:3001`) - Intelligente Test-Ausführung mit Jira-Integration
+1. **MCP Jira Server** (`localhost:3001`) - Automatische Jira-Ticket-Erstellung
+2. **MCP Playwright Server** (`localhost:3003`) - Intelligente Test-Ausführung mit Jira-Integration
 
 ## 🚀 Quick Start Checklist
 
@@ -18,13 +18,17 @@ Als SDET haben Sie Zugang zu zwei leistungsstarken MCP (Model Context Protocol) 
 
 ### Setup
 ```powershell
-# 1. MCP Jira Server starten
-cd c:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-jira
+# 1. PetClinic Backend starten (separates PowerShell-Fenster)
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'C:\Users\Dennis\Projekte\VSProjekte\PetClinic'; ./mvnw spring-boot:run"
+
+# 2. MCP Jira Server starten (neues Terminal)
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-jira
 npm install
 npm start
 
-# 2. MCP Playwright Server starten (neues Terminal)
-cd c:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-playwright
+# 3. MCP Playwright Server starten (neues Terminal)
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-playwright
 npm install
 npm start
 ```
@@ -34,17 +38,17 @@ npm start
 ### 1. Health Check & Setup Validierung
 ```powershell
 # Server Status prüfen
-curl http://localhost:3000/health
+curl http://localhost:3001/health
 
 # Verfügbare Templates anzeigen
-curl http://localhost:3000/templates
+curl http://localhost:3001/templates
 ```
 
 ### 2. Bug Reports automatisch erstellen
 **Use Case:** Test schlägt fehl → Automatisches Bug-Ticket
 
 ```json
-POST http://localhost:3000/create-from-template
+POST http://localhost:3001/create-from-template
 Content-Type: application/json
 
 {
@@ -67,7 +71,7 @@ Content-Type: application/json
 **Use Case:** Neue Testfälle dokumentieren
 
 ```json
-POST http://localhost:3000/create-from-template
+POST http://localhost:3001/create-from-template
 Content-Type: application/json
 
 {
@@ -85,7 +89,7 @@ Content-Type: application/json
 **Use Case:** Langsame Tests identifiziert
 
 ```json
-POST http://localhost:3000/create-smart-ticket
+POST http://localhost:3001/create-smart-ticket
 Content-Type: application/json
 
 {
@@ -104,34 +108,34 @@ Content-Type: application/json
 ### 1. Remote Test-Ausführung
 ```powershell
 # Alle Tests ausführen
-curl -X POST http://localhost:3001/playwright/run-tests
+curl -X POST http://localhost:3003/playwright/run-tests
 
 # Spezifische Test-Suite
-curl -X POST http://localhost:3001/playwright/run-suite/owner-management
+curl -X POST http://localhost:3003/playwright/run-suite/owner-management
 
 # Einzelner Test
-curl -X POST "http://localhost:3001/playwright/run-single/add new owner"
+curl -X POST "http://localhost:3003/playwright/run-single/add new owner"
 ```
 
 ### 2. Test-Monitoring
 ```powershell
 # Aktive Test-Läufe
-curl http://localhost:3001/playwright/active-runs
+curl http://localhost:3003/playwright/active-runs
 
 # Status eines spezifischen Laufs
-curl http://localhost:3001/playwright/status/run-123
+curl http://localhost:3003/playwright/status/run-123
 
 # Ergebnisse abrufen
-curl http://localhost:3001/playwright/results/run-123
+curl http://localhost:3003/playwright/results/run-123
 ```
 
 ### 3. Flaky Test Detection
 ```powershell
 # Instabile Tests identifizieren
-curl http://localhost:3001/playwright/flaky-tests
+curl http://localhost:3003/playwright/flaky-tests
 
 # Automatisches Bug-Ticket für Flaky Test
-curl -X POST http://localhost:3001/playwright/create-bug-ticket \
+curl -X POST http://localhost:3003/playwright/create-bug-ticket \
   -H "Content-Type: application/json" \
   -d '{"testName": "owner-creation-test", "failureReason": "timeout"}'
 ```
@@ -158,7 +162,7 @@ test.afterEach(async ({ page }, testInfo) => {
       }
     };
     
-    await fetch('http://localhost:3000/create-from-template', {
+    await fetch('http://localhost:3001/create-from-template', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ticketData)
@@ -170,10 +174,10 @@ test.afterEach(async ({ page }, testInfo) => {
 ### 2. Intelligente Test-Suite-Planung
 ```powershell
 # Wöchentlicher Report über Test-Performance
-curl http://localhost:3001/playwright/report/last-7d
+curl http://localhost:3003/playwright/report/last-7d
 
 # Empfehlungen für Test-Optimierung
-curl http://localhost:3001/playwright/optimization-suggestions
+curl http://localhost:3003/playwright/optimization-suggestions
 ```
 
 ### 3. Integration in CI/CD Pipeline
@@ -185,10 +189,10 @@ curl http://localhost:3001/playwright/optimization-suggestions
     npm run start:mcp-servers &
     
     # Tests ausführen
-    curl -X POST http://localhost:3001/playwright/run-tests
+    curl -X POST http://localhost:3003/playwright/run-tests
     
     # Ergebnisse in Jira dokumentieren
-    curl -X POST http://localhost:3000/create-smart-ticket \
+    curl -X POST http://localhost:3001/create-smart-ticket \
       -d '{"title": "Daily Test Report", "context": {"automated": true}}'
 ```
 
@@ -221,7 +225,7 @@ Get-Content mcp-jira\index.js | Select-String "JIRA"
 npx playwright test --dry-run
 
 # MCP Playwright Config prüfen
-curl http://localhost:3001/playwright/config
+curl http://localhost:3003/playwright/config
 ```
 
 ## 📊 Reporting & Metriken
@@ -229,8 +233,8 @@ curl http://localhost:3001/playwright/config
 ### 1. Test-Qualitäts-Dashboard
 ```javascript
 // Automatisches Weekly Report
-const weeklyReport = await fetch('http://localhost:3001/playwright/analytics/weekly');
-const jiraTicket = await fetch('http://localhost:3000/create-smart-ticket', {
+const weeklyReport = await fetch('http://localhost:3003/playwright/analytics/weekly');
+const jiraTicket = await fetch('http://localhost:3001/create-smart-ticket', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -244,10 +248,10 @@ const jiraTicket = await fetch('http://localhost:3000/create-smart-ticket', {
 ### 2. Flaky Test Tracking
 ```powershell
 # Flaky Tests der letzten 30 Tage
-curl "http://localhost:3001/playwright/flaky-tests?days=30"
+curl "http://localhost:3003/playwright/flaky-tests?days=30"
 
 # Trend-Analyse
-curl "http://localhost:3001/playwright/flaky-trends"
+curl "http://localhost:3003/playwright/flaky-trends"
 ```
 
 ## 🎯 Advanced SDET Workflows
@@ -269,14 +273,14 @@ const testDataRequest = {
 ### 2. Cross-Platform Test Orchestration
 ```powershell
 # Tests auf verschiedenen Browsern via MCP
-curl -X POST http://localhost:3001/playwright/run-cross-platform \
+curl -X POST http://localhost:3003/playwright/run-cross-platform \
   -d '{"browsers": ["chromium", "firefox", "webkit"], "suite": "critical-path"}'
 ```
 
 ### 3. Visual Regression Integration
 ```powershell
 # Visual Tests mit automatischem Jira-Report
-curl -X POST http://localhost:3001/playwright/visual-regression \
+curl -X POST http://localhost:3003/playwright/visual-regression \
   -d '{"baseline": "main", "current": "feature-branch"}'
 ```
 
@@ -290,7 +294,7 @@ curl -X POST http://localhost:3001/playwright/visual-regression \
 ### Quick Reference
 ```powershell
 # MCP Health Checks
-curl http://localhost:3000/health  # Jira Server
+curl http://localhost:3001/health  # Jira Server
 curl http://localhost:3001/health  # Playwright Server
 
 # Emergency Restart

@@ -12,28 +12,28 @@ Nach diesem Tutorial können Sie:
 
 ### 1. Environment Check
 ```powershell
-# Terminal 1: Backend starten
-cd c:\Users\Dennis\Projekte\VSProjekte\PetClinic
-mvn spring-boot:run
+# Terminal 1: Backend starten (separates PowerShell-Fenster)
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'C:\Users\Dennis\Projekte\VSProjekte\PetClinic'; ./mvnw spring-boot:run"
 
 # Terminal 2: MCP Jira Server
-cd mcp-jira
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-jira
 npm start
 
 # Terminal 3: MCP Playwright Server  
-cd mcp-playwright
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\mcp-playwright
 npm start
 
 # Terminal 4: Für Tests und API-Calls
-cd playwright
+cd C:\Users\Dennis\Projekte\VSProjekte\PetClinic\playwright
 ```
 
 ### 2. Connectivity Test
 ```powershell
 # Alle Services prüfen
-curl http://localhost:8080/health          # PetClinic Backend
-curl http://localhost:3000/health          # MCP Jira
-curl http://localhost:3001/health          # MCP Playwright
+curl http://localhost:8080/actuator/health  # PetClinic Backend (Spring Boot Actuator)
+curl http://localhost:3001/health           # MCP Jira
+curl http://localhost:3003/health           # MCP Playwright
 
 # Erwartete Antworten: HTTP 200 + JSON Response
 ```
@@ -70,7 +70,7 @@ npx playwright test demo-failure.spec.ts
 ### Schritt 3: Automatisches Jira-Ticket via MCP
 ```powershell
 # Bug-Ticket erstellen
-curl -X POST http://localhost:3000/create-from-template `
+curl -X POST http://localhost:3001/create-from-template `
   -H "Content-Type: application/json" `
   -d '{
     "templateId": "petclinic-bug",
@@ -104,7 +104,7 @@ Tests remote über MCP-API ausführen und Ergebnisse automatisch dokumentieren.
 ### Schritt 1: Test-Suite via MCP starten
 ```powershell
 # Alle Owner-Tests ausführen
-curl -X POST http://localhost:3001/playwright/run-suite/owner-management
+curl -X POST http://localhost:3003/playwright/run-suite/owner-management
 
 # Response enthält Run-ID, z.B. {"runId": "run-abc123"}
 ```
@@ -112,11 +112,11 @@ curl -X POST http://localhost:3001/playwright/run-suite/owner-management
 ### Schritt 2: Test-Status überwachen
 ```powershell
 # Status abfragen (Run-ID aus Schritt 1 verwenden)
-curl http://localhost:3001/playwright/status/run-abc123
+curl http://localhost:3003/playwright/status/run-abc123
 
 # Kontinuierliches Monitoring
 while ($true) {
-  $status = curl http://localhost:3001/playwright/status/run-abc123 | ConvertFrom-Json
+  $status = curl http://localhost:3003/playwright/status/run-abc123 | ConvertFrom-Json
   Write-Host "Status: $($status.status) - Progress: $($status.progress)%"
   if ($status.status -eq "completed") { break }
   Start-Sleep 5
@@ -126,10 +126,10 @@ while ($true) {
 ### Schritt 3: Ergebnisse abrufen und dokumentieren
 ```powershell
 # Detaillierte Ergebnisse
-curl http://localhost:3001/playwright/results/run-abc123
+curl http://localhost:3003/playwright/results/run-abc123
 
 # Automatisches Summary-Ticket erstellen
-curl -X POST http://localhost:3000/create-smart-ticket `
+curl -X POST http://localhost:3001/create-smart-ticket `
   -H "Content-Type: application/json" `
   -d '{
     "title": "Test Run Summary - Owner Management Suite",
@@ -152,16 +152,16 @@ Instabile Tests identifizieren und systematisch angehen.
 ### Schritt 1: Flaky Tests identifizieren
 ```powershell
 # Aktuelle Flaky Tests anzeigen
-curl http://localhost:3001/playwright/flaky-tests
+curl http://localhost:3003/playwright/flaky-tests
 
 # Historische Trend-Analyse
-curl "http://localhost:3001/playwright/flaky-trends?days=7"
+curl "http://localhost:3003/playwright/flaky-trends?days=7"
 ```
 
 ### Schritt 2: Flaky Test Investigation Ticket
 ```powershell
 # Investigation-Ticket für instabilen Test
-curl -X POST http://localhost:3000/create-from-template `
+curl -X POST http://localhost:3001/create-from-template `
   -H "Content-Type: application/json" `
   -d '{
     "templateId": "flaky-test-investigation",
@@ -264,7 +264,7 @@ test.describe('Performance Baseline Tests', () => {
 npx playwright test performance-baseline.spec.ts
 
 # Wenn Performance-Probleme gefunden werden:
-curl -X POST http://localhost:3000/create-from-template `
+curl -X POST http://localhost:3001/create-from-template `
   -H "Content-Type: application/json" `
   -d '{
     "templateId": "performance-investigation",
@@ -297,7 +297,7 @@ Start-Process -NoNewWindow -FilePath "npm" -ArgumentList "start" -WorkingDirecto
 Start-Sleep 10  # Server-Startup warten
 
 # 2. Tests via MCP ausführen
-$testResult = curl -X POST http://localhost:3001/playwright/run-tests | ConvertFrom-Json
+$testResult = curl -X POST http://localhost:3003/playwright/run-tests | ConvertFrom-Json
 
 # 3. Build-Summary Ticket erstellen
 $summaryData = @{
@@ -310,7 +310,7 @@ $summaryData = @{
   }
 } | ConvertTo-Json
 
-curl -X POST http://localhost:3000/create-smart-ticket `
+curl -X POST http://localhost:3001/create-smart-ticket `
   -H "Content-Type: application/json" `
   -d $summaryData
 

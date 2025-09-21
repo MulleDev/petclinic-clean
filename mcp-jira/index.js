@@ -2,6 +2,12 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 
+// UTF-8 Encoding für Node.js sicherstellen
+process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+if (process.stdout.isTTY) {
+  process.stdout.setEncoding('utf8');
+}
+
 const app = express();
 
 // Lösche alle Tickets im PET Projekt
@@ -116,8 +122,21 @@ const jiraAuth = {
 };
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Erhöhe das Request-Größenlimit
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ 
+  limit: '50mb',
+  type: 'application/json'
+})); 
+app.use(express.urlencoded({ 
+  limit: '50mb', 
+  extended: true,
+  parameterLimit: 1000
+}));
+
+// UTF-8 Content-Type Header middleware
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
 
 // Template-Definitionen für verschiedene Ticket-Typen
 const TICKET_TEMPLATES = {
@@ -1128,6 +1147,67 @@ app.get('/list-all-tickets', async (req, res) => {
   }
 });
 
+// Einzelnes Ticket abrufen
+app.get('/ticket/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+    console.log(`📋 Lade Ticket: ${ticketKey}`);
+    
+    const response = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const issue = response.data;
+    
+    // Formatiere die Antwort für bessere Lesbarkeit
+    const formattedTicket = {
+      key: issue.key,
+      summary: issue.fields.summary,
+      description: issue.fields.description || '',
+      issueType: issue.fields.issuetype.name,
+      status: issue.fields.status.name,
+      priority: issue.fields.priority?.name || 'Unassigned',
+      assignee: issue.fields.assignee?.displayName || 'Unassigned',
+      reporter: issue.fields.reporter?.displayName || 'Unknown',
+      created: issue.fields.created,
+      updated: issue.fields.updated,
+      labels: issue.fields.labels || [],
+      project: issue.fields.project.key,
+      url: `${JIRA_BASE_URL}/browse/${issue.key}`,
+      transitions: [], // Wird in separatem Call geholt falls nötig
+      comments: issue.fields.comment?.comments?.length || 0,
+      watchers: issue.fields.watches?.watchCount || 0
+    };
+    
+    console.log(`✅ Ticket ${ticketKey} erfolgreich geladen`);
+    res.json({
+      success: true,
+      ticket: formattedTicket
+    });
+    
+  } catch (error) {
+    console.error(`❌ Fehler beim Laden von Ticket ${req.params.ticketKey}:`, error.message);
+    
+    if (error.response?.status === 404) {
+      res.status(404).json({
+        success: false,
+        error: `Ticket ${req.params.ticketKey} nicht gefunden`
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  }
+});
+
 // Lösche alle Tickets im PET Projekt
 app.delete('/delete-all-tickets', async (req, res) => {
   try {
@@ -1262,6 +1342,175 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
+// =============================================
+// 💬 JIRA COMMENT FUNCTIONALITY
+// =============================================
+
+// Kommentar zu Ticket hinzufügen
+app.post('/jira/add-comment', async (req, res) => {
+  try {
+    const { ticketKey, comment, visibility = 'public', author = 'admin' } = req.body;
+
+    // Validation
+    if (!ticketKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'ticketKey ist erforderlich'
+      });
+    }
+
+    if (!comment || comment.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'comment darf nicht leer sein'
+      });
+    }
+
+    // Ticket-Key Format validieren (PET-XXX)
+    if (!/^PET-\d+$/.test(ticketKey)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Ungültiges Ticket-Key Format. Erwartet: PET-XXX'
+      });
+    }
+
+    console.log(`💬 Füge Kommentar zu ${ticketKey} hinzu...`);
+
+    // Comment Body für JIRA formatieren mit UTF-8 Normalisierung
+    let commentBody = Buffer.from(comment, 'utf8').toString('utf8');
+    
+    // Füge Author-Info hinzu wenn nicht admin
+    if (author && author !== 'admin') {
+      commentBody = `*Von ${author}:*\n\n${commentBody}`;
+    }
+
+    // Füge Timestamp hinzu
+    const timestamp = new Date().toLocaleString('de-DE');
+    commentBody += `\n\n_Erstellt: ${timestamp}_`;
+
+    // JIRA Comment Payload mit UTF-8 sicherer Übertragung
+    const commentPayload = {
+      body: commentBody
+    };
+
+    // Visibility nur setzen wenn nicht public
+    if (visibility !== 'public') {
+      commentPayload.visibility = {
+        type: 'group',
+        value: visibility === 'developers' ? 'jira-developers' : 'jira-users'
+      };
+    }
+
+    // JIRA API Call mit UTF-8 Encoding
+    const response = await axios.post(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/comment`,
+      commentPayload,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8'
+        },
+        responseType: 'json',
+        responseEncoding: 'utf8'
+      }
+    );
+
+    console.log(`✅ Kommentar zu ${ticketKey} hinzugefügt (ID: ${response.data.id})`);
+
+    res.json({
+      success: true,
+      message: `Kommentar erfolgreich zu ${ticketKey} hinzugefügt`,
+      comment: {
+        id: response.data.id,
+        created: response.data.created,
+        author: response.data.author?.displayName || author,
+        body: comment,
+        ticketKey: ticketKey,
+        visibility: visibility,
+        jiraUrl: `${JIRA_BASE_URL}/browse/${ticketKey}`
+      }
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler beim Kommentieren von ${req.body.ticketKey}:`, error.message);
+    
+    // Spezifische Fehlerbehandlung
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        error: `Ticket ${req.body.ticketKey} nicht gefunden`
+      });
+    }
+
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        success: false,
+        error: 'JIRA Authentifizierung fehlgeschlagen'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'Unbekannter Fehler'
+    });
+  }
+});
+
+// Kommentare eines Tickets abrufen
+app.get('/jira/comments/:ticketKey', async (req, res) => {
+  try {
+    const { ticketKey } = req.params;
+
+    console.log(`📖 Lade Kommentare für ${ticketKey}...`);
+
+    const response = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/issue/${ticketKey}/comment`,
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${JIRA_USERNAME}:${JIRA_PASSWORD}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const comments = response.data.comments.map(comment => ({
+      id: comment.id,
+      author: comment.author?.displayName || 'Unknown',
+      created: comment.created,
+      updated: comment.updated,
+      body: comment.body,
+      visibility: comment.visibility?.value || 'public'
+    }));
+
+    console.log(`✅ ${comments.length} Kommentare für ${ticketKey} geladen`);
+
+    res.json({
+      success: true,
+      ticketKey: ticketKey,
+      totalComments: comments.length,
+      comments: comments,
+      jiraUrl: `${JIRA_BASE_URL}/browse/${ticketKey}`
+    });
+
+  } catch (error) {
+    console.error(`❌ Fehler beim Laden der Kommentare für ${req.params.ticketKey}:`, error.message);
+    
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        success: false,
+        error: `Ticket ${req.params.ticketKey} nicht gefunden`
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Server starten
 const server = app.listen(PORT, () => {
   console.log(`🚀 MCP Jira Server läuft auf http://localhost:${PORT}`);
@@ -1275,6 +1524,8 @@ const server = app.listen(PORT, () => {
   console.log(`   GET  /jira/projects - Alle Jira-Projekte`);
   console.log(`   POST /jira/create-ticket - Neues Ticket erstellen`);
   console.log(`   POST /create-ticket - Vereinfachte Ticket-Erstellung`);
+  console.log(`   POST /jira/add-comment - Kommentar zu Ticket hinzufügen`);
+  console.log(`   GET  /jira/comments/:key - Kommentare eines Tickets abrufen`);
   console.log(`   DELETE /delete-all-tickets - Alle Tickets löschen`);
   console.log(`   DELETE /delete-ticket/:key - Spezifisches Ticket löschen`);
   console.log(`\n📝 Verfügbare Templates: ${Object.keys(TICKET_TEMPLATES).join(', ')}`);
