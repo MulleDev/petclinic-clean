@@ -5,11 +5,234 @@
 <body>
 
   <h2 th:text="#{welcome}" data-i18n="welcome">Welcome</h2>
+  
+  <!-- Homepage Owner Search Section -->
+  <div class="row mb-4">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header">
+          <h4 th:text="#{quickOwnerSearch}" data-i18n="quickOwnerSearch">Schnelle Besitzer-Suche</h4>
+        </div>
+        <div class="card-body">
+          <form id="homepage-search-form" th:action="@{/search}" method="get" class="d-flex" data-pw="homepage-search-form">
+            <input type="text" 
+                   id="search-input" 
+                   name="searchTerm" 
+                   class="form-control me-2" 
+                   th:placeholder="#{searchOwnerPlaceholder}"
+                   data-i18n-placeholder="searchOwnerPlaceholder"
+                   data-pw="homepage-search-input"
+                   autocomplete="off"
+                   th:value="${param.searchTerm != null ? param.searchTerm[0] : ''}" />
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    data-pw="homepage-search-button"
+                    th:text="#{search}" 
+                    data-i18n="search">Suchen</button>
+          </form>
+          
+          <!-- Search Results Container -->
+          <div id="search-results-container" class="mt-3" style="display: none;" data-pw="search-results-container">
+            <div id="search-loading" class="text-center" style="display: none;" data-pw="search-loading">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden" th:text="#{loading}" data-i18n="loading">Wird geladen...</span>
+              </div>
+              <span th:text="#{searchingOwners}" data-i18n="searchingOwners" class="ms-2">Suche nach Besitzern...</span>
+            </div>
+            
+            <div id="search-results" data-pw="search-results"></div>
+            
+            <div id="search-error" class="alert alert-warning" style="display: none;" data-pw="search-error"></div>
+          </div>
+          
+          <!-- Display server-side error if present -->
+          <div th:if="${searchError}" class="alert alert-warning mt-3" data-pw="search-error-server">
+            <span th:text="${searchError}">Fehler bei der Suche</span>
+          </div>
+          
+          <!-- Quick Actions -->
+          <div class="mt-3 d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" 
+               th:href="@{/owners/find}" 
+               th:text="#{advancedSearch}"
+               data-i18n="advancedSearch"
+               data-pw="advanced-search-link">Erweiterte Suche</a>
+            <a class="btn btn-outline-primary btn-sm" 
+               th:href="@{/owners/new}" 
+               th:text="#{addOwner}"
+               data-i18n="addOwner" 
+               data-pw="add-owner-link">Besitzer hinzufügen</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-12 text-center">
       <img class="img-responsive" src="../static/resources/images/pets.png" th:src="@{/resources/images/pets.png}" />
     </div>
   </div>
+
+  <!-- JavaScript for AJAX Search -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('homepage-search-form');
+      const searchInput = document.getElementById('search-input');
+      const resultsContainer = document.getElementById('search-results-container');
+      const searchResults = document.getElementById('search-results');
+      const searchError = document.getElementById('search-error');
+      const searchLoading = document.getElementById('search-loading');
+      
+      let searchTimeout;
+      
+      // Auto-search as user types (debounced)
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim();
+        
+        if (searchTerm.length < 2) {
+          hideResults();
+          return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+          performSearch(searchTerm);
+        }, 300);
+      });
+      
+      // Handle form submission
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const searchTerm = searchInput.value.trim();
+        
+        if (searchTerm.length === 0) {
+          showError(window.I18N_SEARCH_EMPTY || 'Suchbegriff darf nicht leer sein');
+          return;
+        }
+        
+        // For form submission, redirect to full search
+        window.location.href = '/owners?lastName=' + encodeURIComponent(searchTerm);
+      });
+      
+      async function performSearch(searchTerm) {
+        showLoading();
+        
+        try {
+          const response = await fetch('/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'searchTerm=' + encodeURIComponent(searchTerm)
+          });
+          
+          if (!response.ok) {
+            throw new Error('Netzwerkfehler: ' + response.status);
+          }
+          
+          const result = await response.json();
+          hideLoading();
+          
+          if (result.hasError) {
+            showError(result.errorMessage);
+            return;
+          }
+          
+          displayResults(result.owners, searchTerm);
+          
+        } catch (error) {
+          hideLoading();
+          showError(window.I18N_SEARCH_ERROR || 'Fehler bei der Suche: ' + error.message);
+        }
+      }
+      
+      function displayResults(owners, searchTerm) {
+        hideError();
+        
+        if (owners.length === 0) {
+          showError(window.I18N_NO_OWNERS_FOUND || 'Keine Besitzer gefunden');
+          return;
+        }
+        
+        let html = '<div class="list-group">';
+        html += '<div class="list-group-item list-group-item-action active">';
+        html += '<strong>' + owners.length + ' ' + (window.I18N_OWNERS_FOUND || 'Besitzer gefunden') + '</strong>';
+        html += '</div>';
+        
+        owners.forEach(owner => {
+          html += '<a href="/owners/' + owner.id + '" class="list-group-item list-group-item-action" data-pw="search-result-item">';
+          html += '<div class="d-flex w-100 justify-content-between">';
+          html += '<h6 class="mb-1">' + escapeHtml(owner.fullName) + '</h6>';
+          html += '<small>' + escapeHtml(owner.city || '') + '</small>';
+          html += '</div>';
+          html += '</a>';
+        });
+        
+        if (owners.length === 10) {
+          html += '<div class="list-group-item text-center">';
+          html += '<a href="/owners?lastName=' + encodeURIComponent(searchTerm) + '" class="btn btn-sm btn-outline-primary">';
+          html += (window.I18N_VIEW_ALL || 'Alle anzeigen') + '</a>';
+          html += '</div>';
+        }
+        
+        html += '</div>';
+        
+        searchResults.innerHTML = html;
+        showResults();
+      }
+      
+      function showResults() {
+        resultsContainer.style.display = 'block';
+        searchResults.style.display = 'block';
+      }
+      
+      function hideResults() {
+        resultsContainer.style.display = 'none';
+      }
+      
+      function showError(message) {
+        hideLoading();
+        searchError.textContent = message;
+        searchError.style.display = 'block';
+        searchResults.style.display = 'none';
+        resultsContainer.style.display = 'block';
+      }
+      
+      function hideError() {
+        searchError.style.display = 'none';
+      }
+      
+      function showLoading() {
+        searchLoading.style.display = 'block';
+        searchResults.style.display = 'none';
+        hideError();
+        resultsContainer.style.display = 'block';
+      }
+      
+      function hideLoading() {
+        searchLoading.style.display = 'none';
+      }
+      
+      function escapeHtml(text) {
+        const map = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+      }
+      
+      // Hide results when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!form.contains(e.target) && !resultsContainer.contains(e.target)) {
+          hideResults();
+        }
+      });
+    });
+  </script>
 
 </body>
 

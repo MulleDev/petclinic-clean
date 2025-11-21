@@ -1021,7 +1021,8 @@ app.post('/jira/create-ticket', async (req, res) => {
       assignee = null,      // Zuweisen an User (optional)
       labels = [],          // Labels (Array)
       parentKey = null,     // Parent-Key für Sub-Tasks (erforderlich für Sub-Tasks)
-      epicName = null       // Epic Name für Epic Tickets (erforderlich für Epics)
+      epicName = null,      // Epic Name für Epic Tickets (erforderlich für Epics)
+      epicLink = null       // Epic Link für Stories (PET-XXX Key)
     } = req.body;
 
     // Validierung
@@ -1051,10 +1052,15 @@ app.post('/jira/create-ticket', async (req, res) => {
       });
     }
 
-    // Für Epics: Epic Name hinzufügen (customfield_10104)
+    // Für Epics: Epic Name hinzufügen (customfield_10103 - KORREKTE FIELD ID!)
     if (issueType === 'Epic') {
       const epicNameValue = epicName || summary; // Verwende epicName oder fallback auf summary
-      issuePayload.fields.customfield_10104 = epicNameValue;
+      issuePayload.fields.customfield_10103 = epicNameValue;
+    }
+
+    // Für Stories: Epic Link hinzufügen (customfield_10101)
+    if (epicLink && (issueType === 'Story' || issueType === 'Task' || issueType === 'Bug')) {
+      issuePayload.fields.customfield_10101 = epicLink;
     }
 
     // Optional: Assignee hinzufügen
@@ -1087,7 +1093,8 @@ app.post('/jira/create-ticket', async (req, res) => {
         key: ticketKey,
         url: ticketUrl,
         id: response.data.id,
-        self: response.data.self
+        self: response.data.self,
+        epicLink: epicLink || null
       }
     });
 

@@ -3,6 +3,7 @@ import { Page, Locator } from '@playwright/test';
 /**
  * Modern HomePage with MCP-optimized selectors
  * Auto-generated and enhanced by MCP Playwright Server
+ * Enhanced for PET-12: Homepage Owner Search
  */
 export class HomePage {
   readonly page: Page;
@@ -22,6 +23,17 @@ export class HomePage {
   readonly veterinariansButton: Locator;
   readonly errorButton: Locator;
   
+  // PET-12: Homepage Search Elements
+  readonly searchForm: Locator;
+  readonly searchInput: Locator;
+  readonly searchButton: Locator;
+  readonly searchResultsContainer: Locator;
+  readonly searchResults: Locator;
+  readonly searchError: Locator;
+  readonly searchLoading: Locator;
+  readonly advancedSearchLink: Locator;
+  readonly addOwnerLink: Locator;
+  
   constructor(page: Page) {
     this.page = page;
     
@@ -37,6 +49,17 @@ export class HomePage {
     this.findOwnersButton = page.locator('[data-testid="find-owners"], a:has-text("FIND OWNERS")');
     this.veterinariansButton = page.locator('[data-testid="veterinarians"], a:has-text("VETERINARIANS")');
     this.errorButton = page.locator('[data-testid="error-trigger"], a:has-text("ERROR")');
+    
+    // PET-12: Search Elements
+    this.searchForm = page.locator('[data-pw="homepage-search-form"]');
+    this.searchInput = page.locator('[data-pw="homepage-search-input"]');
+    this.searchButton = page.locator('[data-pw="homepage-search-button"]');
+    this.searchResultsContainer = page.locator('[data-pw="search-results-container"]');
+    this.searchResults = page.locator('[data-pw="search-results"]');
+    this.searchError = page.locator('[data-pw="search-error"]');
+    this.searchLoading = page.locator('[data-pw="search-loading"]');
+    this.advancedSearchLink = page.locator('[data-pw="advanced-search-link"]');
+    this.addOwnerLink = page.locator('[data-pw="add-owner-link"]');
   }
 
   /**
@@ -91,6 +114,95 @@ export class HomePage {
     await this.errorButton.click();
   }
 
+  // PET-12: Homepage Search Methods
+  
+  /**
+   * Perform quick search from homepage
+   */
+  async searchForOwner(searchTerm: string): Promise<void> {
+    await this.searchInput.fill(searchTerm);
+    await this.searchButton.click();
+  }
+
+  /**
+   * Perform AJAX search (type and wait)
+   */
+  async performAjaxSearch(searchTerm: string): Promise<void> {
+    await this.searchInput.fill(searchTerm);
+    await this.page.waitForTimeout(500); // Wait for AJAX debounce
+  }
+
+  /**
+   * Wait for search results to appear
+   */
+  async waitForSearchResults(): Promise<void> {
+    await this.searchResultsContainer.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Get search result items
+   */
+  async getSearchResults(): Promise<string[]> {
+    const results = await this.searchResults.locator('[data-pw="search-result-item"]').allTextContents();
+    return results;
+  }
+
+  /**
+   * Click on search result by index
+   */
+  async clickSearchResult(index: number): Promise<void> {
+    await this.searchResults.locator('[data-pw="search-result-item"]').nth(index).click();
+  }
+
+  /**
+   * Check if search has errors
+   */
+  async hasSearchError(): Promise<boolean> {
+    return await this.searchError.isVisible();
+  }
+
+  /**
+   * Get search error message
+   */
+  async getSearchErrorMessage(): Promise<string> {
+    return await this.searchError.textContent() || '';
+  }
+
+  /**
+   * Check if search is loading
+   */
+  async isSearchLoading(): Promise<boolean> {
+    return await this.searchLoading.isVisible();
+  }
+
+  /**
+   * Navigate to advanced search
+   */
+  async navigateToAdvancedSearch(): Promise<void> {
+    await this.advancedSearchLink.click();
+  }
+
+  /**
+   * Navigate to add new owner
+   */
+  async navigateToAddOwner(): Promise<void> {
+    await this.addOwnerLink.click();
+  }
+
+  /**
+   * Clear search input
+   */
+  async clearSearch(): Promise<void> {
+    await this.searchInput.clear();
+  }
+
+  /**
+   * Hide search results by clicking outside
+   */
+  async hideSearchResults(): Promise<void> {
+    await this.page.locator('body').click({ position: { x: 50, y: 50 } });
+  }
+
   /**
    * MCP Feature: Get page analytics
    */
@@ -99,7 +211,8 @@ export class HomePage {
       isWelcomeVisible: await this.welcomeHeader.isVisible(),
       isNavigationVisible: await this.navigationMenu.isVisible(),
       currentLanguage: await this.languageSelector.inputValue(),
-      loadTime: await this.page.evaluate(() => performance.now())
+      loadTime: await this.page.evaluate(() => performance.now()),
+      isSearchFormVisible: await this.searchForm.isVisible()
     };
   }
 

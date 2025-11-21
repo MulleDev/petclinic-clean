@@ -102,4 +102,72 @@ Willkommen im PetClinic-Projekt! Diese Datei richtet sich an neue SDETs (Softwar
 - Jira-Fehler: Backend-Logs prüfen, ggf. Entwickler kontaktieren
 
 ---
+
+## SDET-Prompt & MCP-API-Workflow
+
+**Kernregel:**  
+Als SDET-Prompt IMMER den MCP Playwright Server nutzen, niemals direkte Playwright-Befehle!
+
+**MCP-First Approach:**
+- Statt `npx playwright test` → `curl -X POST http://localhost:3003/playwright/run-tests`
+- Testausführung, Status-Monitoring und Jira-Ticket-Erstellung immer über die MCP API
+
+**Standard-Workflow:**
+1. MCP Health Check:  
+   `curl http://localhost:3001/health`
+2. Test-Ausführung via MCP API  
+   z.B. `curl -X POST http://localhost:3003/playwright/run-tests`
+3. Run-ID extrahieren und Status überwachen  
+   z.B. `curl http://localhost:3003/playwright/status/<runId>`
+4. Ergebnisse analysieren  
+   z.B. `curl http://localhost:3003/playwright/results/<runId>`
+5. Automatische Jira-Tickets bei Problemen  
+   z.B. `curl -X POST http://localhost:3001/create-from-template ...`
+
+**Automatische Fehlerbehandlung:**
+- Test-Failures → Bug-Tickets mit Screenshot und Stacktrace
+- Flaky Tests → Investigation-Tickets
+- Performance-Probleme → Performance-Investigation-Tickets
+- Tägliche Reports → Summary-Tickets
+
+**Verfügbare MCP Endpoints:**
+- POST /playwright/run-tests (alle Tests)
+- POST /playwright/run-suite/:suite (spezifische Suite)
+- POST /playwright/run-single/:test (einzelner Test)
+- GET /playwright/status/:runId (Status)
+- GET /playwright/results/:runId (Ergebnisse)
+- GET /playwright/flaky-tests (instabile Tests)
+- GET /playwright/performance-report (Performance)
+
+**Jira MCP Endpoints:**
+- POST /create-from-template (Template-basierte Tickets)
+- POST /create-smart-ticket (intelligente Ticket-Erstellung)
+- GET /templates (verfügbare Templates)
+
+**Quick Commands für SDET-Prompt:**
+```bash
+# Health Check All
+curl http://localhost:3001/health && curl http://localhost:3001/health
+
+# Run All Tests with Monitoring
+curl -X POST http://localhost:3003/playwright/run-tests | tee /tmp/run.json && \
+RUN_ID=$(cat /tmp/run.json | jq -r '.runId') && \
+curl http://localhost:3003/playwright/status/$RUN_ID
+
+# Emergency: All Flaky Tests Report
+curl http://localhost:3003/playwright/flaky-tests && \
+curl -X POST http://localhost:3001/create-smart-ticket \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Daily Flaky Test Report","description":"Automated report","context":{"petclinic":true}}'
+
+# Performance Alert
+curl http://localhost:3003/playwright/slow-tests?threshold=10s
+```
+
+**Integration in den SDET-Workflow:**
+- Morgens: MCP Health Check, Flaky Test Report, Performance Check, Overnight Failure Analysis
+- Bei Entwicklung: Feature-Tests via MCP, automatische Bug-Tickets, Performance-Monitoring
+- Abends: Daily Summary via MCP, Trend-Analyse, Planung für den nächsten Tag
+
+---
 **Willkommen im Team! Viel Erfolg beim Testen und Automatisieren!**
